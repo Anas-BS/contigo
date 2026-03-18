@@ -22,9 +22,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        nunito: ['var(--font-nunito)', 'sans-serif'],
-        inter: ['var(--font-inter)', 'sans-serif'],
-        mono: ['var(--font-jetbrains)', 'monospace'],
+        nunito: ['Nunito', 'Segoe UI', 'system-ui', 'sans-serif'],
+        inter: ['Inter', 'Segoe UI', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
       },
     },
   },

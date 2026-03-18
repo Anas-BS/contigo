@@ -130,7 +130,7 @@ export default function TigoChat() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 placeholder="Ask Tigo anything..."
                 className="flex-1 px-4 py-2 bg-contigo-peach rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-contigo-orange"
               />
