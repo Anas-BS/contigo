@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Fonts — loaded from CDN at runtime */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --font-nunito: 'Nunito', system-ui, -apple-system, sans-serif;
+  --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-jetbrains: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+body {
+  background-color: #FFF8F4;
+  color: #1E2A3A;
+  font-family: var(--font-inter);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-nunito);
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-jetbrains);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .gradient-orange {
+    background: linear-gradient(135deg, #F97B4F 0%, #F96B3F 100%);
+  }
+  .gradient-hero {
+    background: linear-gradient(135deg, #F97B4F 0%, #F5C842 60%, #F96B3F 100%);
+  }
+  .font-inter {
+    font-family: var(--font-inter);
+  }
+  .font-nunito {
+    font-family: var(--font-nunito);
+  }
+}
