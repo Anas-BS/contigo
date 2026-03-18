@@ -1,34 +1,40 @@
 # Contigo 🌟
 ### "With you, every step."
 
-Contigo is a Holistic English Language Teaching (ELT) Student Performance Intelligence Platform. It tracks every variable around a student — grades, mood, seating, teacher wellbeing, timetable, classroom environment — and correlates them to understand what truly drives English language learning outcomes.
+Contigo is a Holistic English Language Teaching (ELT) Student Performance Intelligence Platform.
 
-## Features
-- 📊 Holistic Analytics across 50+ variables
-- 🪑 Classroom Seating Intelligence with KPI heatmaps
-- 🤖 AI-Powered Insights via Tigo, your AI assistant
-- 🗣️ ELT Skill Tracking (Speaking, Listening, Reading, Writing, Grammar, Vocabulary)
-- 😊 Student Wellbeing & Mood Check-ins
-- 🧑‍🏫 Teacher Performance & Wellbeing KPIs
-- 🗓️ Timetable Impact Analysis
+## 🚀 Deploy to Vercel
 
-## Getting Started
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Anas-BS/contigo)
+
+## 💻 Local Development
 
 ```bash
+# Install dependencies
 npm install
+
+# Run development server
 npm run dev
+
+# Open http://localhost:3000
 ```
 
-## Tech Stack
-- Next.js 14 (App Router)
-- Tailwind CSS
-- Recharts
-- Framer Motion
-- Lucide React
-- @dnd-kit/core
+## 🏗️ Build for Production
 
-## Colour Palette
-- 🟠 Contigo Orange: `#F97B4F`
-- 🟡 Insight Amber: `#F5C842`
-- 🔵 Contigo Blue: `#2E6FDF`
-- 🟢 Contigo Teal: `#3ECFAC`
+```bash
+npm run build
+npm run start
+```
+
+## 📱 Pages
+- `/` — Landing page
+- `/login` — Login with role selector
+- `/student/dashboard` — Student "My Journey" dashboard
+- `/teacher/dashboard` — Teacher dashboard
+- `/teacher/classroom` — Classroom seating map & heatmap
+- `/admin/dashboard` — Admin "The Full Picture" dashboard
+
+## 🎨 Brand
+- Primary colour: #F97B4F (Contigo Orange)
+- Tagline: "With you, every step."
+- AI Assistant: Tigo 🤖

@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --contigo-orange: #F97B4F;
+  --contigo-amber: #F5C842;
+  --contigo-blue: #2E6FDF;
+  --contigo-teal: #3ECFAC;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
