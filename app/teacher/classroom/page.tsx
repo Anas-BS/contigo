@@ -28,11 +28,28 @@ const SEATS = [
   { id: 'R3C6', row: 3, col: 6, name: 'Ismail B.', score: 40 },
 ];
 
+function seatStyle(score: number, selected: boolean): React.CSSProperties {
+  let bg: string;
+  let borderColor: string;
+  if (score >= 80) { bg = 'rgba(40, 184, 154, 0.15)'; borderColor = '#28B89A'; }
+  else if (score >= 65) { bg = 'rgba(212, 160, 23, 0.15)'; borderColor = '#D4A017'; }
+  else if (score >= 50) { bg = 'rgba(232, 99, 42, 0.15)'; borderColor = '#E8632A'; }
+  else { bg = 'rgba(196, 58, 58, 0.18)'; borderColor = '#C43A3A'; }
+
+  return {
+    background: bg,
+    border: `1px solid ${borderColor}`,
+    boxShadow: selected ? `0 0 12px ${borderColor}80, inset 0 0 8px ${borderColor}30` : 'none',
+    transform: selected ? 'scale(1.07)' : 'scale(1)',
+    transition: 'all 0.15s',
+  };
+}
+
 function scoreColor(score: number): string {
-  if (score >= 80) return 'bg-green-400 text-white';
-  if (score >= 65) return 'bg-yellow-400 text-white';
-  if (score >= 50) return 'bg-orange-400 text-white';
-  return 'bg-red-500 text-white';
+  if (score >= 80) return '#28B89A';
+  if (score >= 65) return '#D4A017';
+  if (score >= 50) return '#E8632A';
+  return '#C43A3A';
 }
 
 export default function ClassroomPage() {
@@ -42,18 +59,30 @@ export default function ClassroomPage() {
   const selected = SEATS.find((s) => s.id === selectedSeat);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: 'var(--arc-bg)' }}>
       {/* Nav */}
-      <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <Link href="/" className="text-[#F97B4F] font-bold text-xl">Contigo 🌟</Link>
-        <Link href="/teacher/dashboard" className="text-sm text-[#2E6FDF] hover:underline">← Teacher Dashboard</Link>
+      <nav className="flex items-center justify-between px-6 py-3 border-b"
+        style={{ background: 'var(--arc-surface)', borderColor: 'var(--arc-border)' }}>
+        <Link href="/" className="text-xl font-bold tracking-widest uppercase text-glow-orange"
+          style={{ color: 'var(--arc-orange)', fontFamily: 'Barlow Condensed, monospace' }}>
+          CONTIGO
+        </Link>
+        <Link href="/teacher/dashboard" className="arc-label transition-colors"
+          style={{ color: 'var(--arc-blue)' }}>
+          — Teacher Dashboard
+        </Link>
       </nav>
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Classroom Seating Map 🪑</h1>
-          <p className="text-gray-500 text-sm mt-1">Room 12 — Grade 5B — KPI Heatmap</p>
+          <div className="arc-label mb-1">// TACTICAL SEATING MAP</div>
+          <h1 className="text-3xl font-bold tracking-widest uppercase"
+            style={{ color: 'var(--arc-text)', fontFamily: 'Barlow Condensed, monospace' }}>
+            Classroom Seating Map
+          </h1>
+          <div className="arc-divider w-48 mt-2" />
+          <p className="arc-label mt-2">Room 12 — Grade 5B — KPI Heatmap</p>
         </div>
 
         {/* KPI Selector */}
@@ -62,24 +91,29 @@ export default function ClassroomPage() {
             <button
               key={kpi}
               onClick={() => setActiveKpi(kpi)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                activeKpi === kpi
-                  ? 'bg-[#F97B4F] text-white'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:border-orange-300'
-              }`}
+              className="px-4 py-1.5 text-xs font-bold tracking-widest uppercase transition-all"
+              style={{
+                fontFamily: 'Barlow Condensed, monospace',
+                background: activeKpi === kpi ? 'var(--arc-orange)' : 'var(--arc-surface)',
+                border: `1px solid ${activeKpi === kpi ? 'var(--arc-orange)' : 'var(--arc-border)'}`,
+                color: activeKpi === kpi ? '#fff' : 'var(--arc-muted)',
+                clipPath: 'polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)',
+                boxShadow: activeKpi === kpi ? '0 0 10px rgba(232,99,42,0.4)' : 'none',
+              }}
             >
               {kpi}
             </button>
           ))}
         </div>
 
-        {/* Classroom */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        {/* Classroom Map */}
+        <div className="arc-panel p-6">
           {/* Board */}
-          <div className="bg-gray-800 text-white text-center py-2 rounded-lg mb-4 text-sm font-medium">
-            📺 Whiteboard / Projector
+          <div className="text-center py-2 mb-2 text-xs font-bold tracking-widest uppercase"
+            style={{ background: 'var(--arc-border)', color: 'var(--arc-muted)', fontFamily: 'Barlow Condensed, monospace' }}>
+            WHITEBOARD / PROJECTOR
           </div>
-          <div className="text-center text-xs text-gray-500 mb-6">🧑‍🏫 Teacher&apos;s Desk</div>
+          <div className="text-center arc-label mb-6">Instructor Desk</div>
 
           {/* Seats Grid */}
           <div className="space-y-4">
@@ -89,12 +123,17 @@ export default function ClassroomPage() {
                   <button
                     key={seat.id}
                     onClick={() => setSelectedSeat(seat.id === selectedSeat ? null : seat.id)}
-                    className={`w-24 h-16 rounded-xl flex flex-col items-center justify-center text-xs font-medium transition-all shadow-sm ${scoreColor(seat.score)} ${
-                      selectedSeat === seat.id ? 'ring-4 ring-[#F97B4F] scale-105' : 'hover:scale-105'
-                    }`}
+                    className="w-24 h-16 flex flex-col items-center justify-center"
+                    style={seatStyle(seat.score, selectedSeat === seat.id)}
                   >
-                    <span>{seat.name}</span>
-                    <span className="font-bold mt-0.5">{seat.score}%</span>
+                    <span className="text-xs font-semibold tracking-wide"
+                      style={{ color: 'var(--arc-text)', fontFamily: 'Barlow Condensed, monospace' }}>
+                      {seat.name}
+                    </span>
+                    <span className="text-sm font-bold mt-0.5"
+                      style={{ color: scoreColor(seat.score), fontFamily: 'Share Tech Mono, monospace' }}>
+                      {seat.score}%
+                    </span>
                   </button>
                 ))}
               </div>
@@ -102,16 +141,16 @@ export default function ClassroomPage() {
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-4 mt-6 text-xs">
+          <div className="flex flex-wrap justify-center gap-6 mt-6">
             {[
-              { color: 'bg-green-400', label: 'High (80–100)' },
-              { color: 'bg-yellow-400', label: 'Medium (65–79)' },
-              { color: 'bg-orange-400', label: 'Low (50–64)' },
-              { color: 'bg-red-500', label: 'At-Risk (<50)' },
+              { color: '#28B89A', label: 'High (80–100)' },
+              { color: '#D4A017', label: 'Medium (65–79)' },
+              { color: '#E8632A', label: 'Low (50–64)' },
+              { color: '#C43A3A', label: 'At-Risk (<50)' },
             ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <div className={`w-3 h-3 rounded ${color}`} />
-                <span className="text-gray-600">{label}</span>
+              <div key={label} className="flex items-center gap-2 arc-label">
+                <div className="w-2.5 h-2.5" style={{ background: color }} />
+                {label}
               </div>
             ))}
           </div>
@@ -119,29 +158,42 @@ export default function ClassroomPage() {
 
         {/* Selected Seat Detail */}
         {selected && (
-          <div className="bg-white rounded-xl p-5 shadow-sm border border-orange-100">
-            <h3 className="font-semibold text-gray-800 mb-3">📍 {selected.name} — Seat {selected.id}</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-              <div><span className="text-gray-500">KPI ({activeKpi}):</span> <span className="font-bold text-[#F97B4F]">{selected.score}%</span></div>
-              <div><span className="text-gray-500">Row:</span> <span className="font-bold">{selected.row}</span></div>
-              <div><span className="text-gray-500">Zone:</span> <span className="font-bold">{selected.row === 1 ? 'Front' : selected.row === 2 ? 'Middle' : 'Back'}</span></div>
-              <div><span className="text-gray-500">Status:</span> <span className={`font-bold ${selected.score >= 65 ? 'text-green-600' : 'text-red-500'}`}>{selected.score >= 65 ? 'On Track' : 'At Risk'}</span></div>
+          <div className="arc-panel p-5">
+            <div className="arc-label mb-3" style={{ color: 'var(--arc-orange)' }}>
+              {selected.name} — Seat {selected.id}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm" style={{ fontFamily: 'Barlow Condensed, monospace' }}>
+              <div>
+                <span className="arc-label">KPI ({activeKpi})</span>
+                <p className="font-bold text-lg" style={{ color: 'var(--arc-orange)' }}>{selected.score}%</p>
+              </div>
+              <div>
+                <span className="arc-label">Row</span>
+                <p className="font-bold text-lg" style={{ color: 'var(--arc-text)' }}>{selected.row}</p>
+              </div>
+              <div>
+                <span className="arc-label">Zone</span>
+                <p className="font-bold text-lg" style={{ color: 'var(--arc-text)' }}>
+                  {selected.row === 1 ? 'Front' : selected.row === 2 ? 'Middle' : 'Back'}
+                </p>
+              </div>
+              <div>
+                <span className="arc-label">Status</span>
+                <p className="font-bold text-lg" style={{ color: selected.score >= 65 ? '#28B89A' : '#C43A3A' }}>
+                  {selected.score >= 65 ? 'On Track' : 'At Risk'}
+                </p>
+              </div>
             </div>
           </div>
         )}
 
         {/* AI Insight */}
-        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-5">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">🤖</span>
-            <div>
-              <p className="font-semibold text-gray-800 text-sm">Tigo AI Insight</p>
-              <p className="text-gray-700 text-sm mt-1">
-                Front-centre seats score 38% higher on {activeKpi.toLowerCase()} on average.
-                Back row students average 3.9 vs 8.2 for front row. Consider rotating seating next week.
-              </p>
-            </div>
-          </div>
+        <div className="arc-panel p-5">
+          <div className="arc-label mb-2" style={{ color: 'var(--arc-orange)' }}>Tigo AI Insight</div>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--arc-text)' }}>
+            Front-centre seats score 38% higher on {activeKpi.toLowerCase()} on average.
+            Back row students average 3.9 vs 8.2 for front row. Consider rotating seating next week.
+          </p>
         </div>
       </div>
 

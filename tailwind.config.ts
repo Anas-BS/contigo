@@ -9,10 +9,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'contigo-orange': '#F97B4F',
-        'contigo-amber': '#F5C842',
-        'contigo-blue': '#2E6FDF',
-        'contigo-teal': '#3ECFAC',
+        'arc-bg': '#080B10',
+        'arc-surface': '#0F1318',
+        'arc-panel': '#141C24',
+        'arc-border': '#1E2C3A',
+        'arc-orange': '#E8632A',
+        'arc-amber': '#D4A017',
+        'arc-blue': '#3A82C4',
+        'arc-teal': '#28B89A',
+        'arc-red': '#C43A3A',
+        'arc-text': '#C8D8E4',
+        'arc-muted': '#5C7080',
+        'contigo-orange': '#E8632A',
+        'contigo-amber': '#D4A017',
+        'contigo-blue': '#3A82C4',
+        'contigo-teal': '#28B89A',
+      },
+      fontFamily: {
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
     },
   },

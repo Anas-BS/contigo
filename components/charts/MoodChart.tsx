@@ -28,16 +28,20 @@ export default function MoodChart({ data = DEFAULT_DATA }: MoodChartProps) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-        <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
-        <Tooltip />
+        <CartesianGrid strokeDasharray="3 3" stroke="#1E2C3A" />
+        <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#5C7080', fontFamily: 'Share Tech Mono, monospace' }} axisLine={{ stroke: '#1E2C3A' }} tickLine={false} />
+        <YAxis domain={[0, 10]} tick={{ fontSize: 10, fill: '#5C7080', fontFamily: 'Share Tech Mono, monospace' }} axisLine={{ stroke: '#1E2C3A' }} tickLine={false} />
+        <Tooltip
+          contentStyle={{ background: '#141C24', border: '1px solid #1E2C3A', color: '#C8D8E4', fontSize: 11, fontFamily: 'Share Tech Mono, monospace' }}
+          labelStyle={{ color: '#5C7080' }}
+        />
         <Line
           type="monotone"
           dataKey="mood"
-          stroke="#3ECFAC"
+          stroke="#28B89A"
           strokeWidth={2}
-          dot={{ fill: '#3ECFAC', r: 4 }}
+          dot={{ fill: '#28B89A', r: 3, strokeWidth: 0 }}
+          activeDot={{ r: 5, fill: '#28B89A', stroke: '#0F1318', strokeWidth: 2 }}
         />
       </LineChart>
     </ResponsiveContainer>
