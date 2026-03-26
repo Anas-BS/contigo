@@ -121,7 +121,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <TigoChat />
+      <TigoChat role="admin" />
     </div>
   );
 }

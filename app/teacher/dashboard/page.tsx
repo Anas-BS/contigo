@@ -18,6 +18,7 @@ export default function TeacherDashboard() {
       <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
         <Link href="/" className="text-[#F97B4F] font-bold text-xl">Contigo 🌟</Link>
         <div className="flex items-center gap-4">
+          <Link href="/teacher/classes" className="text-sm text-[#2E6FDF] hover:underline">Manage Classes</Link>
           <Link href="/teacher/classroom" className="text-sm text-[#2E6FDF] hover:underline">Classroom Map</Link>
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm">🧑‍🏫</div>
         </div>
@@ -28,6 +29,27 @@ export default function TeacherDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Teacher Dashboard 🧑‍🏫</h1>
           <p className="text-gray-500 text-sm mt-1">Grade 5B — English — 28 students</p>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { icon: '📚', label: 'Manage Classes', desc: 'Add, edit & delete students', href: '/teacher/classes', color: 'bg-blue-50 border-blue-200 hover:bg-blue-100' },
+            { icon: '🪑', label: 'Classroom Map', desc: 'Seating heatmap & KPIs', href: '/teacher/classroom', color: 'bg-orange-50 border-orange-200 hover:bg-orange-100' },
+            { icon: '🤖', label: 'Ask Tigo', desc: 'AI insights & suggestions', href: '#', color: 'bg-purple-50 border-purple-200 hover:bg-purple-100' },
+          ].map((action) => (
+            <a
+              key={action.label}
+              href={action.href}
+              className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${action.color}`}
+            >
+              <span className="text-3xl">{action.icon}</span>
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">{action.label}</p>
+                <p className="text-xs text-gray-500">{action.desc}</p>
+              </div>
+            </a>
+          ))}
         </div>
 
         {/* Summary KPIs */}
@@ -99,7 +121,7 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      <TigoChat />
+      <TigoChat role="teacher" />
     </div>
   );
 }

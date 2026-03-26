@@ -78,8 +78,7 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Tigo AI Chat */}
-      <TigoChat />
+      <TigoChat role="student" />
     </div>
   );
 }

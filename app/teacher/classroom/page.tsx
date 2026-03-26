@@ -145,7 +145,7 @@ export default function ClassroomPage() {
         </div>
       </div>
 
-      <TigoChat />
+      <TigoChat role="teacher" />
     </div>
   );
 }
