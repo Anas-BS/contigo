@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { SkillsChart } from '@/components/charts/SkillsChart';
-import { MoodChart } from '@/components/charts/MoodChart';
+import SkillsChart from '@/components/charts/SkillsChart';
+import MoodChart from '@/components/charts/MoodChart';
 import TigoChat from '@/components/TigoChat';
 import { TrendingUp, Zap, Award, Flame } from 'lucide-react';
 
