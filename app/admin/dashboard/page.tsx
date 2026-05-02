@@ -1,14 +1,20 @@
+'use client';
+
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import PerformanceBarChart from '@/components/charts/PerformanceBarChart';
 import TigoChat from '@/components/TigoChat';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { GraduationCap, Users, BarChart3, AlertTriangle, Heart, Bot } from 'lucide-react';
 
 const PLATFORM_STATS = [
-  { label: 'Total Students', value: '342', color: '#F97B4F', emoji: '🎓' },
-  { label: 'Active Teachers', value: '18', color: '#2E6FDF', emoji: '🧑‍🏫' },
-  { label: 'School Average', value: '71%', color: '#3ECFAC', emoji: '📊' },
-  { label: 'At-Risk Students', value: '24', color: '#EF4444', emoji: '⚠️' },
-  { label: 'Avg Wellbeing', value: '7.1/10', color: '#F5C842', emoji: '😊' },
-  { label: 'Tigo Sessions', value: '1,204', color: '#8B5CF6', emoji: '🤖' },
+  { label: 'Total Students', value: '342', icon: GraduationCap, color: 'from-orange-500/20 to-orange-600/20', borderColor: 'border-orange-400/30', iconColor: 'text-orange-400' },
+  { label: 'Active Teachers', value: '18', icon: Users, color: 'from-blue-500/20 to-blue-600/20', borderColor: 'border-blue-400/30', iconColor: 'text-blue-400' },
+  { label: 'School Average', value: '71%', icon: BarChart3, color: 'from-teal-500/20 to-teal-600/20', borderColor: 'border-teal-400/30', iconColor: 'text-teal-400' },
+  { label: 'At-Risk Students', value: '24', icon: AlertTriangle, color: 'from-red-500/20 to-red-600/20', borderColor: 'border-red-400/30', iconColor: 'text-red-400' },
+  { label: 'Avg Wellbeing', value: '7.1/10', icon: Heart, color: 'from-amber-500/20 to-amber-600/20', borderColor: 'border-amber-400/30', iconColor: 'text-amber-400' },
+  { label: 'Tigo Sessions', value: '1,204', icon: Bot, color: 'from-purple-500/20 to-purple-600/20', borderColor: 'border-purple-400/30', iconColor: 'text-purple-400' },
 ];
 
 const GRADE_BREAKDOWN = [
@@ -26,98 +32,233 @@ const TOP_TEACHERS = [
   { name: 'Ms. Rania Farid', class: 'Grade 6A', avg: 77, wellbeing: 8.1 },
 ];
 
+const ALERTS = [
+  { alert: '3 students below 40% in Grade 5B', urgency: 'high' },
+  { alert: 'Mood drop detected in Grade 3A this week', urgency: 'medium' },
+  { alert: 'Attendance below 80% — 4 students', urgency: 'high' },
+  { alert: 'Speaking anxiety spike in Grade 6B', urgency: 'medium' },
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.07, delayChildren: 0.1 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+};
+
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Nav */}
-      <nav className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <Link href="/" className="text-[#F97B4F] font-bold text-xl">Contigo 🌟</Link>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">The Full Picture</span>
-          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-sm">🏛️</div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+          className="absolute top-0 left-1/2 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"
+          animate={{ x: [0, 60, -60, 0], y: [0, 80, -80, 0] }}
+          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          className="absolute bottom-0 right-0 w-80 h-80 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"
+          animate={{ x: [0, -40, 40, 0], y: [0, -60, 60, 0] }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Admin — The Full Picture 🏛️</h1>
-          <p className="text-gray-500 text-sm mt-1">School-wide ELT Intelligence Dashboard</p>
-        </div>
-
-        {/* Platform Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {PLATFORM_STATS.map((stat) => (
-            <div key={stat.label} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-              <div className="text-center space-y-1">
-                <span className="text-2xl">{stat.emoji}</span>
-                <p className="text-xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
-                <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
+      <div className="relative z-10">
+        {/* Navigation */}
+        <motion.nav
+          className="backdrop-blur-md bg-white/5 border-b border-white/10 sticky top-0 z-40"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <Link
+              href="/"
+              className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent"
+            >
+              Contigo 🌟
+            </Link>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-white/60 hidden md:block">The Full Picture</span>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-sm">
+                🏛️
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        </motion.nav>
 
-        {/* Grade Breakdown Chart */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h2 className="font-semibold text-gray-800 mb-4">📊 Average Score by Grade</h2>
-          <PerformanceBarChart data={GRADE_BREAKDOWN} color="#2E6FDF" />
-        </div>
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+          {/* Header */}
+          <motion.div
+            className="space-y-1"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h1 className="text-4xl md:text-5xl font-bold text-white">
+              Admin Dashboard
+            </h1>
+            <p className="text-white/60 text-lg">School-wide ELT Intelligence Dashboard</p>
+          </motion.div>
 
-        {/* Two Column */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Top Teachers */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h2 className="font-semibold text-gray-800 mb-4">🏆 Top Performing Teachers</h2>
-            <div className="space-y-3">
-              {TOP_TEACHERS.map((t, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{t.name}</p>
-                    <p className="text-xs text-gray-500">{t.class}</p>
+          {/* Platform Stats */}
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {PLATFORM_STATS.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={index}
+                  className={`backdrop-blur-md bg-gradient-to-br ${stat.color} border ${stat.borderColor} rounded-2xl p-4 text-center hover:border-white/30 transition-all`}
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.03, boxShadow: '0px 15px 30px rgba(249,123,79,0.1)' }}
+                >
+                  <Icon className={`w-5 h-5 ${stat.iconColor} mx-auto mb-2`} />
+                  <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  <p className="text-xs text-white/60 mt-0.5 font-medium">{stat.label}</p>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+
+          {/* Grade Breakdown Chart */}
+          <motion.div
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="hover:border-white/20">
+              <CardHeader>
+                <CardTitle>📊 Average Score by Grade</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PerformanceBarChart data={GRADE_BREAKDOWN} color="#2E6FDF" />
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Two Column */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Top Teachers */}
+            <motion.div
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ delay: 0.3 }}
+            >
+              <Card className="h-full hover:border-white/20">
+                <CardHeader>
+                  <CardTitle>🏆 Top Performing Teachers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {TOP_TEACHERS.map((t, i) => (
+                      <motion.div
+                        key={i}
+                        className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 + i * 0.08 }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400/20 to-orange-600/20 border border-orange-400/20 flex items-center justify-center text-orange-400 text-xs font-bold">
+                            {i + 1}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-white">{t.name}</p>
+                            <p className="text-xs text-white/50">{t.class}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-orange-400">{t.avg}%</p>
+                          <p className="text-xs text-white/50">Wellbeing: {t.wellbeing}</p>
+                        </div>
+                      </motion.div>
+                    ))}
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-[#F97B4F]">{t.avg}%</p>
-                    <p className="text-xs text-gray-500">Wellbeing: {t.wellbeing}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* At-Risk Alerts */}
+            <motion.div
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ delay: 0.35 }}
+            >
+              <Card className="h-full hover:border-white/20">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>⚠️ At-Risk Alerts</CardTitle>
+                    <Badge variant="danger">4 Active</Badge>
                   </div>
-                </div>
-              ))}
-            </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {ALERTS.map((item, i) => (
+                      <motion.div
+                        key={i}
+                        className="flex items-start gap-3 text-sm p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all"
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.45 + i * 0.07 }}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                            item.urgency === 'high' ? 'bg-red-400' : 'bg-amber-400'
+                          }`}
+                        />
+                        <div className="flex-1">
+                          <p className="text-white/80">{item.alert}</p>
+                        </div>
+                        <Badge variant={item.urgency === 'high' ? 'danger' : 'warning'} className="text-[10px] flex-shrink-0">
+                          {item.urgency}
+                        </Badge>
+                      </motion.div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
 
-          {/* At-Risk Summary */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <h2 className="font-semibold text-gray-800 mb-4">⚠️ At-Risk Alerts</h2>
-            <div className="space-y-3">
-              {[
-                { alert: '3 students below 40% in Grade 5B', type: 'grade', urgency: 'high' },
-                { alert: 'Mood drop detected in Grade 3A this week', type: 'wellbeing', urgency: 'medium' },
-                { alert: 'Attendance below 80% — 4 students', type: 'attendance', urgency: 'high' },
-                { alert: 'Speaking anxiety spike in Grade 6B', type: 'anxiety', urgency: 'medium' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-3 text-sm">
-                  <span className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${item.urgency === 'high' ? 'bg-red-500' : 'bg-amber-400'}`} />
-                  <span className="text-gray-700">{item.alert}</span>
-                </div>
-              ))}
+          {/* AI Insight Banner */}
+          <motion.div
+            className="backdrop-blur-md bg-gradient-to-r from-orange-500/20 to-purple-500/20 border border-orange-400/30 rounded-2xl p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            whileHover={{ scale: 1.01 }}
+          >
+            <div className="flex items-start gap-4">
+              <motion.span
+                className="text-3xl"
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                🤖
+              </motion.span>
+              <div className="flex-1">
+                <p className="font-semibold text-white text-base mb-2">Tigo School Intelligence Summary</p>
+                <p className="text-white/80 text-sm leading-relaxed">
+                  This week&apos;s data shows a 4% drop in average speaking scores school-wide.
+                  The strongest predictor of this decline is increased seating instability in
+                  Grades 4–6. Recommendation: implement fixed seating for 3 weeks and re-measure
+                  speaking confidence scores. Estimated improvement: +6–9%.
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* AI Insight Banner */}
-        <div className="bg-gradient-to-r from-orange-50 to-purple-50 border border-orange-200 rounded-xl p-6">
-          <div className="flex items-start gap-3">
-            <span className="text-3xl">🤖</span>
-            <div>
-              <p className="font-semibold text-gray-800">Tigo School Intelligence Summary</p>
-              <p className="text-gray-700 text-sm mt-2 leading-relaxed">
-                This week&apos;s data shows a 4% drop in average speaking scores school-wide. 
-                The strongest predictor of this decline is increased seating instability in 
-                Grades 4–6. Recommendation: implement fixed seating for 3 weeks and re-measure 
-                speaking confidence scores. Estimated improvement: +6–9%.
-              </p>
-            </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
