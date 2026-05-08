@@ -99,7 +99,7 @@ export default function TigoChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'tigo',
-      text: 'Hi! I\'m Tigo 🤖 — your AI learning assistant. How can I help you today?',
+      text: "Hi! I'm Tigo 🤖, your learning companion. How can I help you today?",
     },
   ]);
 
@@ -200,7 +200,7 @@ export default function TigoChat() {
                 </motion.span>
                 <div>
                   <p className="font-semibold text-base">Tigo</p>
-                  <p className="text-xs opacity-80">AI Learning Assistant</p>
+                  <p className="text-xs opacity-80">Your Learning Companion</p>
                 </div>
               </div>
             </motion.div>

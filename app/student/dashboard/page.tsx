@@ -1,11 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { SkillsChart } from '@/components/charts/SkillsChart';
-import { MoodChart } from '@/components/charts/MoodChart';
+import { motion, AnimatePresence } from 'framer-motion';
+import SkillsChart from '@/components/charts/SkillsChart';
+import MoodChart from '@/components/charts/MoodChart';
 import TigoChat from '@/components/TigoChat';
-import { TrendingUp, Zap, Award, Flame } from 'lucide-react';
+import { TrendingUp, Zap, Award, Flame, Plus, Target, Smile } from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -41,6 +42,57 @@ const cardHoverVariants = {
 };
 
 export default function StudentDashboard() {
+  const [moodToday, setMoodToday] = useState(7);
+  const [moodHistory, setMoodHistory] = useState([
+    { date: 'Mon', mood: 7 },
+    { date: 'Tue', mood: 6 },
+    { date: 'Wed', mood: 8 },
+    { date: 'Thu', mood: 5 },
+    { date: 'Fri', mood: 9 },
+    { date: 'Sat', mood: 7 },
+    { date: 'Sun', mood: 8 },
+  ]);
+  const [moodLogged, setMoodLogged] = useState(false);
+  const [goal, setGoal] = useState('Reach B2 speaking level by July');
+  const [goalDraft, setGoalDraft] = useState('');
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [logEntry, setLogEntry] = useState('');
+  const [activity, setActivity] = useState([
+    { id: 1, title: 'Completed Speaking Practice', time: '2 hours ago', icon: '🎤' },
+    { id: 2, title: 'Improved Listening Score', time: '5 hours ago', icon: '👂' },
+    { id: 3, title: 'Vocabulary Quiz: 92%', time: 'Yesterday', icon: '📚' },
+    { id: 4, title: 'Attended Live Class', time: '2 days ago', icon: '👥' },
+  ]);
+
+  const logMood = () => {
+    setMoodHistory((prev) => {
+      const next = [...prev];
+      next[next.length - 1] = { date: 'Today', mood: moodToday };
+      return next;
+    });
+    setMoodLogged(true);
+    setTimeout(() => setMoodLogged(false), 2000);
+  };
+
+  const addLogEntry = () => {
+    const text = logEntry.trim();
+    if (!text) return;
+    setActivity((prev) => [
+      { id: Date.now(), title: text, time: 'Just now', icon: '✏️' },
+      ...prev,
+    ]);
+    setLogEntry('');
+  };
+
+  const saveGoal = () => {
+    const value = goalDraft.trim();
+    if (value) setGoal(value);
+    setEditingGoal(false);
+    setGoalDraft('');
+  };
+
+  const moodEmoji = moodToday >= 8 ? '😄' : moodToday >= 6 ? '🙂' : moodToday >= 4 ? '😐' : '😟';
+
   const KPI_CARDS = [
     {
       label: 'Overall Grade',
@@ -78,13 +130,6 @@ export default function StudentDashboard() {
       trend: 'Keep it up!',
       trendUp: true,
     },
-  ];
-
-  const RECENT_ACTIVITY = [
-    { id: 1, title: 'Completed Speaking Practice', time: '2 hours ago', icon: '🎤' },
-    { id: 2, title: 'Improved Listening Score', time: '5 hours ago', icon: '👂' },
-    { id: 3, title: 'Vocabulary Quiz: 92%', time: 'Yesterday', icon: '📚' },
-    { id: 4, title: 'Attended Live Class', time: '2 days ago', icon: '👥' },
   ];
 
   return (
@@ -155,7 +200,7 @@ export default function StudentDashboard() {
               My Journey
             </h1>
             <p className="text-white/60 text-lg">
-              Track your progress and celebrate your achievements
+              Track your progress and celebrate your wins.
             </p>
           </motion.div>
 
@@ -224,9 +269,149 @@ export default function StudentDashboard() {
               variants={itemVariants}
               whileHover={cardHoverVariants}
             >
-              <h2 className="text-xl font-bold text-white mb-6">7-Day Mood Trend</h2>
+              <h2 className="text-xl font-bold text-white mb-6">Weekly Mood Trend</h2>
               <div className="h-64 flex items-center justify-center">
-                <MoodChart />
+                <MoodChart data={moodHistory.map((m) => ({ date: m.date, mood: m.mood }))} />
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Interactive Inputs Grid */}
+          <motion.div
+            className="grid md:grid-cols-2 gap-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {/* Mood Check-in */}
+            <motion.div
+              className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
+              variants={itemVariants}
+              whileHover={cardHoverVariants}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-purple-500/20 border border-purple-400/30">
+                  <Smile className="w-5 h-5 text-purple-300" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Daily Mood Check in</h2>
+              </div>
+              <p className="text-white/60 text-sm mb-6">How are you feeling today?</p>
+              <div className="flex items-center justify-center mb-6">
+                <motion.span
+                  key={moodEmoji}
+                  className="text-7xl"
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                >
+                  {moodEmoji}
+                </motion.span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={10}
+                value={moodToday}
+                onChange={(e) => setMoodToday(Number(e.target.value))}
+                aria-label="Mood score from 1 to 10"
+                title="Mood score from 1 to 10"
+                className="w-full accent-orange-400"
+              />
+              <div className="flex justify-between text-xs text-white/50 mt-2 mb-6">
+                <span>Rough day</span>
+                <span className="text-orange-300 font-semibold">{moodToday}/10</span>
+                <span>Amazing</span>
+              </div>
+              <motion.button
+                onClick={logMood}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-xl font-semibold shadow-lg shadow-orange-500/30"
+              >
+                {moodLogged ? '✓ Logged' : 'Save Today\u2019s Mood'}
+              </motion.button>
+            </motion.div>
+
+            {/* Goal & Daily Log */}
+            <motion.div
+              className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all space-y-6"
+              variants={itemVariants}
+              whileHover={cardHoverVariants}
+            >
+              {/* Goal */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-xl bg-blue-500/20 border border-blue-400/30">
+                    <Target className="w-5 h-5 text-blue-300" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Current Goal</h2>
+                </div>
+                {!editingGoal ? (
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-white/80 text-sm leading-relaxed flex-1">{goal}</p>
+                    <button
+                      onClick={() => {
+                        setGoalDraft(goal);
+                        setEditingGoal(true);
+                      }}
+                      className="text-xs text-orange-300 hover:text-orange-200 font-medium whitespace-nowrap"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={goalDraft}
+                      onChange={(e) => setGoalDraft(e.target.value)}
+                      placeholder="Write a clear, kind goal for yourself"
+                      className="w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveGoal}
+                        className="flex-1 bg-orange-500 text-white py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingGoal(false)}
+                        className="flex-1 bg-white/10 text-white py-2 rounded-lg text-sm font-semibold hover:bg-white/20 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Daily Log */}
+              <div className="border-t border-white/10 pt-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-xl bg-orange-500/20 border border-orange-400/30">
+                    <Plus className="w-5 h-5 text-orange-300" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Log a Quick Win</h2>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={logEntry}
+                    onChange={(e) => setLogEntry(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addLogEntry()}
+                    placeholder="What did you practice today?"
+                    className="flex-1 bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
+                  />
+                  <motion.button
+                    onClick={addLogEntry}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 rounded-xl font-semibold"
+                  >
+                    Add
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -242,32 +427,36 @@ export default function StudentDashboard() {
             <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
 
             <div className="space-y-4">
-              {RECENT_ACTIVITY.map((activity, index) => (
-                <motion.div
-                  key={activity.id}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                  whileHover={{ x: 5 }}
-                >
-                  <span className="text-2xl">{activity.icon}</span>
-                  <div className="flex-1">
-                    <p className="text-white font-medium">{activity.title}</p>
-                    <p className="text-white/50 text-sm">{activity.time}</p>
-                  </div>
+              <AnimatePresence>
+                {activity.map((entry, index) => (
                   <motion.div
-                    className="text-white/40 group-hover:text-orange-400 transition-colors"
+                    key={entry.id}
+                    layout
+                    className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: 0.05 * index }}
                     whileHover={{ x: 5 }}
                   >
-                    →
+                    <span className="text-2xl">{entry.icon}</span>
+                    <div className="flex-1">
+                      <p className="text-white font-medium">{entry.title}</p>
+                      <p className="text-white/50 text-sm">{entry.time}</p>
+                    </div>
+                    <motion.div
+                      className="text-white/40 group-hover:text-orange-400 transition-colors"
+                      whileHover={{ x: 5 }}
+                    >
+                      →
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              ))}
+                ))}
+              </AnimatePresence>
             </div>
           </motion.div>
 
-          {/* AI Insight Banner */}
+          {/* Tigo Insight Banner */}
           <motion.div
             className="backdrop-blur-md bg-gradient-to-r from-orange-500/20 to-purple-500/20 border border-orange-400/30 rounded-2xl p-8 space-y-4"
             initial={{ opacity: 0, y: 20 }}
@@ -284,9 +473,9 @@ export default function StudentDashboard() {
                 🤖
               </motion.span>
               <div className="flex-1">
-                <p className="font-semibold text-white text-lg mb-2">Tigo AI Insight</p>
+                <p className="font-semibold text-white text-lg mb-2">Tigo Insight</p>
                 <p className="text-white/80">
-                  You're on an amazing streak! Your speaking confidence has improved by 15% this month. Keep practicing with our daily speaking challenges to reach B2 level. 🎯
+                  You are on an amazing streak. Your speaking confidence climbed 15% this month. Keep going with the daily speaking challenges to reach B2 level. 🎯
                 </p>
               </div>
             </div>

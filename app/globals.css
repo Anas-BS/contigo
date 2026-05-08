@@ -15,12 +15,19 @@ body {
 
 /* Redesign Enhancements */
 .scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Fallback for older browsers */
+@supports not (scrollbar-width: none) {
+  .scrollbar-hide {
+    overflow: -moz-scrollbars-none;
+  }
 }
 
 html {

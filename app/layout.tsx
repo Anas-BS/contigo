@@ -1,11 +1,8 @@
 import type { Metadata } from 'next';
+import { defaultMetadata } from '@/lib/config/metadata';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'Contigo — With you, every step.',
-  description:
-    'Contigo is a Holistic English Language Teaching (ELT) Student Performance Intelligence Platform.',
-};
+export const metadata: Metadata = defaultMetadata;
 
 export default function RootLayout({
   children,

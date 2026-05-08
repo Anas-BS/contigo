@@ -75,8 +75,8 @@ export default function LandingPage() {
     },
     {
       icon: Brain,
-      title: 'AI Insights via Tigo',
-      description: 'Intelligent recommendations powered by machine learning and data analysis.',
+      title: 'Smart Insights via Tigo',
+      description: 'Personalised recommendations that turn raw data into clear next steps.',
     },
     {
       icon: Smile,
@@ -192,7 +192,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto leading-relaxed">
-              Contigo is a holistic English Language Teaching platform that tracks every variable—grades, mood, seating, wellbeing—to unlock what truly drives learning outcomes.
+              Contigo is a holistic English Language Teaching platform that tracks every variable that matters: grades, mood, seating, and wellbeing. The result is a clear picture of what truly drives learning outcomes.
             </p>
           </motion.div>
 
