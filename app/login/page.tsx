@@ -51,7 +51,7 @@ export default function LoginPage() {
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8 space-y-6">
           {/* Header */}
           <div className="text-center space-y-3 flex flex-col items-center">
-            <Logo href="" size={72} />
+            <Logo href="" size={160} />
             <p className="text-white/60 text-sm italic">&ldquo;With you, every step.&rdquo;</p>
           </div>
 

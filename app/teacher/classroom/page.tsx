@@ -89,7 +89,7 @@ export default function ClassroomPage() {
           transition={{ duration: 0.6 }}
         >
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Logo size={44} />
+            <Logo size={112} />
             <Link
               href="/teacher/dashboard"
               className="text-sm text-white/70 hover:text-orange-400 transition-colors"

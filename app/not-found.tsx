@@ -67,7 +67,7 @@ export default function NotFound() {
         animate="visible"
       >
         <motion.div variants={itemVariants} className="flex justify-center">
-          <Logo size={64} />
+          <Logo size={160} />
         </motion.div>
 
         {/* 404 Number */}

@@ -77,7 +77,7 @@ export default function AdminDashboard() {
           transition={{ duration: 0.6 }}
         >
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Logo size={44} />
+            <Logo size={112} />
             <div className="flex items-center gap-4">
               <span className="text-sm text-white/70 hidden md:block">The Full Picture</span>
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white font-bold">

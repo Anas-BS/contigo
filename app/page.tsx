@@ -138,7 +138,7 @@ export default function LandingPage() {
           transition={{ duration: 0.6 }}
         >
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Logo size={48} />
+            <Logo size={128} />
             <motion.div
               className="hidden md:flex gap-6 text-sm text-white/70"
               initial={{ opacity: 0 }}

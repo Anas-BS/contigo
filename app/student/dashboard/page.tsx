@@ -173,7 +173,7 @@ export default function StudentDashboard() {
           transition={{ duration: 0.6 }}
         >
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Logo size={44} />
+            <Logo size={112} />
             <motion.div
               className="flex items-center gap-4"
               whileHover={{ scale: 1.05 }}
