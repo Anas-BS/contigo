@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import TigoChat from '@/components/TigoChat';
+import Logo from '@/components/Logo';
 
 const HEATMAP_KPIS = ['Speaking', 'Mood', 'Engagement', 'Anxiety', 'Grade'] as const;
 type Kpi = (typeof HEATMAP_KPIS)[number];
@@ -88,9 +89,7 @@ export default function ClassroomPage() {
           transition={{ duration: 0.6 }}
         >
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              Contigo 🌟
-            </Link>
+            <Logo size={44} />
             <Link
               href="/teacher/dashboard"
               className="text-sm text-white/70 hover:text-orange-400 transition-colors"

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, BarChart3, Users, Brain, Smile } from 'lucide-react';
+import { ArrowRight, BarChart3, Users, Brain, Smile } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -137,16 +138,7 @@ export default function LandingPage() {
           transition={{ duration: 0.6 }}
         >
           <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <motion.div
-              className="flex items-center gap-2"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-            >
-              <Sparkles className="w-6 h-6 text-orange-400" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-                Contigo
-              </span>
-            </motion.div>
+            <Logo size={48} />
             <motion.div
               className="hidden md:flex gap-6 text-sm text-white/70"
               initial={{ opacity: 0 }}

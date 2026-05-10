@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SkillsChart from '@/components/charts/SkillsChart';
 import MoodChart from '@/components/charts/MoodChart';
 import TigoChat from '@/components/TigoChat';
+import Logo from '@/components/Logo';
 import { TrendingUp, Zap, Award, Flame, Plus, Target, Smile } from 'lucide-react';
 
 const containerVariants = {
@@ -172,9 +173,7 @@ export default function StudentDashboard() {
           transition={{ duration: 0.6 }}
         >
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              Contigo 🌟
-            </Link>
+            <Logo size={44} />
             <motion.div
               className="flex items-center gap-4"
               whileHover={{ scale: 1.05 }}

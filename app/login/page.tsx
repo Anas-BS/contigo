@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const ROLES = [
   { id: 'student', label: 'Student', emoji: '🎓', path: '/student/dashboard' },
@@ -49,16 +50,8 @@ export default function LoginPage() {
       >
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8 space-y-6">
           {/* Header */}
-          <div className="text-center space-y-2">
-            <motion.div
-              className="inline-flex items-center gap-2"
-              whileHover={{ scale: 1.05 }}
-            >
-              <Sparkles className="w-6 h-6 text-orange-400" />
-              <span className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-                Contigo
-              </span>
-            </motion.div>
+          <div className="text-center space-y-3 flex flex-col items-center">
+            <Logo href="" size={72} />
             <p className="text-white/60 text-sm italic">&ldquo;With you, every step.&rdquo;</p>
           </div>
 

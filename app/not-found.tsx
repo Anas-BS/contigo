@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Home, ArrowLeft, Search } from 'lucide-react';
+import Logo from '@/components/Logo';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -65,6 +66,10 @@ export default function NotFound() {
         initial="hidden"
         animate="visible"
       >
+        <motion.div variants={itemVariants} className="flex justify-center">
+          <Logo size={64} />
+        </motion.div>
+
         {/* 404 Number */}
         <motion.div variants={itemVariants}>
           <h1 className="text-9xl md:text-[12rem] font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">

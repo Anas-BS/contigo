@@ -6,7 +6,7 @@ export const siteConfig = {
   tagline: 'With you, every step.',
   description: 'Contigo is a Holistic English Language Teaching (ELT) Student Performance Intelligence Platform that tracks grades, mood, seating, and wellbeing.',
   url: 'https://contigo.vercel.app',
-  ogImage: '/og-image.png',
+  ogImage: '/logo.png',
   links: {
     github: 'https://github.com/Anas-BS/contigo',
   },
@@ -72,11 +72,11 @@ export const defaultMetadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
-  manifest: '/site.webmanifest',
+  manifest: undefined,
 };
 
 // Helper function to generate page-specific metadata
