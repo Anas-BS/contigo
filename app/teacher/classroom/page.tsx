@@ -5,58 +5,37 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import TigoChat from '@/components/TigoChat';
 import Logo from '@/components/Logo';
+import { HEATMAP_KPIS, INVERSE_HEATMAP_KPIS, GRADE_THRESHOLDS } from '@/lib/constants';
+import { MOCK_SEATS } from '@/lib/services/mockData';
+import { buildClassroomSeats, seatScoreClassForKpi } from '@/lib/utils';
+import { useDebounce } from '@/lib/hooks';
+import type { HeatmapKpi, ClassroomSeat } from '@/lib/types';
 
-const HEATMAP_KPIS = ['Speaking', 'Mood', 'Engagement', 'Anxiety', 'Grade'] as const;
-type Kpi = (typeof HEATMAP_KPIS)[number];
+const SEATS: ClassroomSeat[] = buildClassroomSeats(MOCK_SEATS);
 
-type Seat = {
-  id: string;
-  row: number;
-  col: number;
-  name: string;
-  scores: Record<Kpi, number>;
-};
-
-const buildScores = (base: number): Record<Kpi, number> => ({
-  Speaking: base,
-  Mood: Math.max(20, Math.min(100, base + 6)),
-  Engagement: Math.max(20, Math.min(100, base - 4)),
-  Anxiety: Math.max(20, Math.min(100, 100 - base)),
-  Grade: base,
-});
-
-const SEATS: Seat[] = [
-  { id: 'R1C1', row: 1, col: 1, name: 'Sara A.', scores: buildScores(82) },
-  { id: 'R1C2', row: 1, col: 2, name: 'Omar H.', scores: buildScores(75) },
-  { id: 'R1C3', row: 1, col: 3, name: 'Ali N.', scores: buildScores(91) },
-  { id: 'R1C4', row: 1, col: 4, name: 'Lena K.', scores: buildScores(68) },
-  { id: 'R1C5', row: 1, col: 5, name: 'Fatima Z.', scores: buildScores(55) },
-  { id: 'R1C6', row: 1, col: 6, name: 'Hassan M.', scores: buildScores(77) },
-  { id: 'R2C1', row: 2, col: 1, name: 'Nour S.', scores: buildScores(70) },
-  { id: 'R2C2', row: 2, col: 2, name: 'Karim B.', scores: buildScores(62) },
-  { id: 'R2C3', row: 2, col: 3, name: 'Rania F.', scores: buildScores(85) },
-  { id: 'R2C4', row: 2, col: 4, name: 'Tariq L.', scores: buildScores(48) },
-  { id: 'R2C5', row: 2, col: 5, name: 'Dina M.', scores: buildScores(79) },
-  { id: 'R2C6', row: 2, col: 6, name: 'Youssef K.', scores: buildScores(73) },
-  { id: 'R3C1', row: 3, col: 1, name: 'Mariam T.', scores: buildScores(41) },
-  { id: 'R3C2', row: 3, col: 2, name: 'Khalid A.', scores: buildScores(38) },
-  { id: 'R3C3', row: 3, col: 3, name: 'Sana R.', scores: buildScores(44) },
-  { id: 'R3C4', row: 3, col: 4, name: 'Ahmed W.', scores: buildScores(35) },
-  { id: 'R3C5', row: 3, col: 5, name: 'Layla H.', scores: buildScores(52) },
-  { id: 'R3C6', row: 3, col: 6, name: 'Ismail B.', scores: buildScores(40) },
-];
-
-function scoreClass(score: number): string {
-  if (score >= 80) return 'bg-gradient-to-br from-green-400 to-green-600 text-white';
-  if (score >= 65) return 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white';
-  if (score >= 50) return 'bg-gradient-to-br from-orange-400 to-orange-600 text-white';
-  return 'bg-gradient-to-br from-red-500 to-red-700 text-white';
+function legendForKpi(kpi: HeatmapKpi) {
+  const inverted = INVERSE_HEATMAP_KPIS.has(kpi);
+  if (inverted) {
+    return [
+      { color: 'bg-green-500', label: 'Low (calm)' },
+      { color: 'bg-amber-500', label: 'Moderate' },
+      { color: 'bg-orange-500', label: 'Elevated' },
+      { color: 'bg-red-500', label: 'High (anxious)' },
+    ];
+  }
+  return [
+    { color: 'bg-green-500', label: `High (${GRADE_THRESHOLDS.high} to 100)` },
+    { color: 'bg-amber-500', label: `Medium (${GRADE_THRESHOLDS.medium} to ${GRADE_THRESHOLDS.high - 1})` },
+    { color: 'bg-orange-500', label: `Low (${GRADE_THRESHOLDS.low} to ${GRADE_THRESHOLDS.medium - 1})` },
+    { color: 'bg-red-500', label: `At risk (under ${GRADE_THRESHOLDS.low})` },
+  ];
 }
 
 export default function ClassroomPage() {
-  const [activeKpi, setActiveKpi] = useState<Kpi>('Speaking');
+  const [activeKpi, setActiveKpi] = useState<HeatmapKpi>('Speaking');
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 200);
 
   const selected = SEATS.find((s) => s.id === selectedSeat) ?? null;
 
@@ -65,6 +44,8 @@ export default function ClassroomPage() {
     const back = SEATS.filter((s) => s.row === 3).reduce((sum, s) => sum + s.scores[activeKpi], 0) / 6;
     return { front: front.toFixed(0), back: back.toFixed(0), diff: (front - back).toFixed(0) };
   }, [activeKpi]);
+
+  const legend = legendForKpi(activeKpi);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -109,7 +90,6 @@ export default function ClassroomPage() {
             <p className="text-white/60 text-lg mt-2">Room 12, Grade 5B. Live KPI heatmap.</p>
           </motion.div>
 
-          {/* KPI selector + search */}
           <motion.div
             className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between"
             initial={{ opacity: 0, y: 20 }}
@@ -142,7 +122,6 @@ export default function ClassroomPage() {
             />
           </motion.div>
 
-          {/* Classroom */}
           <motion.div
             className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-6 md:p-8"
             initial={{ opacity: 0, y: 20 }}
@@ -158,7 +137,9 @@ export default function ClassroomPage() {
               {[1, 2, 3].map((row) => (
                 <div key={row} className="flex justify-center gap-3 flex-wrap">
                   {SEATS.filter((s) => s.row === row).map((seat) => {
-                    const matched = !search || seat.name.toLowerCase().includes(search.toLowerCase());
+                    const matched =
+                      !debouncedSearch ||
+                      seat.name.toLowerCase().includes(debouncedSearch.toLowerCase());
                     const score = seat.scores[activeKpi];
                     return (
                       <motion.button
@@ -168,8 +149,9 @@ export default function ClassroomPage() {
                         onClick={() =>
                           setSelectedSeat(seat.id === selectedSeat ? null : seat.id)
                         }
-                        className={`w-24 h-20 rounded-xl flex flex-col items-center justify-center text-xs font-semibold shadow-lg transition-all ${scoreClass(
-                          score
+                        className={`w-24 h-20 rounded-xl flex flex-col items-center justify-center text-xs font-semibold shadow-lg transition-all ${seatScoreClassForKpi(
+                          score,
+                          activeKpi
                         )} ${
                           selectedSeat === seat.id
                             ? 'ring-4 ring-orange-300 scale-105'
@@ -188,12 +170,7 @@ export default function ClassroomPage() {
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 mt-6 text-xs">
-              {[
-                { color: 'bg-green-500', label: 'High (80 to 100)' },
-                { color: 'bg-amber-500', label: 'Medium (65 to 79)' },
-                { color: 'bg-orange-500', label: 'Low (50 to 64)' },
-                { color: 'bg-red-500', label: 'At risk (under 50)' },
-              ].map(({ color, label }) => (
+              {legend.map(({ color, label }) => (
                 <div key={label} className="flex items-center gap-2 text-white/70">
                   <div className={`w-3 h-3 rounded ${color}`} />
                   <span>{label}</span>
@@ -202,7 +179,6 @@ export default function ClassroomPage() {
             </div>
           </motion.div>
 
-          {/* Selected Seat Detail */}
           <AnimatePresence>
             {selected && (
               <motion.div
@@ -226,7 +202,6 @@ export default function ClassroomPage() {
             )}
           </AnimatePresence>
 
-          {/* Tigo Insight */}
           <motion.div
             className="backdrop-blur-md bg-gradient-to-r from-orange-500/20 to-purple-500/20 border border-orange-400/30 rounded-2xl p-6"
             initial={{ opacity: 0, y: 20 }}

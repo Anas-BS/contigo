@@ -1,4 +1,5 @@
 // Shared constants for Contigo platform
+import type { HeatmapKpi } from '@/lib/types';
 
 export const ROLES = [
   { id: 'student', label: 'Student', emoji: '🎓', path: '/student/dashboard' },
@@ -26,7 +27,23 @@ export const COLOR_CLASSES = {
   purple: 'text-purple-600',
 } as const;
 
-export const HEATMAP_KPIS = ['Speaking', 'Mood', 'Engagement', 'Anxiety', 'Grade'] as const;
+export const HEATMAP_KPIS: readonly HeatmapKpi[] = [
+  'Speaking',
+  'Mood',
+  'Engagement',
+  'Anxiety',
+  'Grade',
+];
+
+// KPIs where LOW score = GOOD (color is inverted in heatmap)
+export const INVERSE_HEATMAP_KPIS = new Set<HeatmapKpi>(['Anxiety']);
+
+export const GRADE_THRESHOLDS = {
+  high: 80,
+  medium: 65,
+  low: 50,
+  atRisk: 60,
+} as const;
 
 export const QUICK_REPLIES = [
   'How am I doing this week?',

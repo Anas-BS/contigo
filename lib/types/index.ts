@@ -74,6 +74,12 @@ export interface Seat {
   studentId?: string;
 }
 
+export type HeatmapKpi = 'Speaking' | 'Mood' | 'Engagement' | 'Anxiety' | 'Grade';
+
+export interface ClassroomSeat extends Seat {
+  scores: Record<HeatmapKpi, number>;
+}
+
 export interface ClassroomStats {
   totalStudents: number;
   classAverage: number;
@@ -85,8 +91,16 @@ export interface ClassroomStats {
 export interface PlatformStats {
   label: string;
   value: string;
-  color: string;
   emoji: string;
+  gradient: string;
+  border: string;
+}
+
+export interface TopTeacher {
+  name: string;
+  class: string;
+  avg: number;
+  wellbeing: number;
 }
 
 export interface Alert {

@@ -1,5 +1,13 @@
 // Mock data service for development
-import type { Student, Activity, ChartDataPoint, Seat, PlatformStats, Alert } from '@/lib/types';
+import type {
+  Student,
+  Activity,
+  ChartDataPoint,
+  Seat,
+  PlatformStats,
+  TopTeacher,
+  Alert,
+} from '@/lib/types';
 
 export const MOCK_STUDENTS: Student[] = [
   { id: '1', name: 'Sara Ahmed', email: 'sara@example.com', role: 'student', grade: 82, mood: 8, trend: 'up', level: 'B2' },
@@ -18,13 +26,13 @@ export const MOCK_ACTIVITIES: Activity[] = [
 ];
 
 export const MOCK_MOOD_DATA: ChartDataPoint[] = [
-  { date: 'Mon 3/11', mood: 7 },
-  { date: 'Tue 3/12', mood: 6 },
-  { date: 'Wed 3/13', mood: 8 },
-  { date: 'Thu 3/14', mood: 5 },
-  { date: 'Fri 3/15', mood: 9 },
-  { date: 'Mon 3/18', mood: 7 },
-  { date: 'Tue 3/19', mood: 8 },
+  { date: 'Mon', mood: 7 },
+  { date: 'Tue', mood: 6 },
+  { date: 'Wed', mood: 8 },
+  { date: 'Thu', mood: 5 },
+  { date: 'Fri', mood: 9 },
+  { date: 'Sat', mood: 7 },
+  { date: 'Sun', mood: 8 },
 ];
 
 export const MOCK_SKILLS_DATA: ChartDataPoint[] = [
@@ -67,12 +75,18 @@ export const MOCK_SEATS: Seat[] = [
 ];
 
 export const MOCK_PLATFORM_STATS: PlatformStats[] = [
-  { label: 'Total Students', value: '342', color: '#F97B4F', emoji: '🎓' },
-  { label: 'Active Teachers', value: '18', color: '#2E6FDF', emoji: '🧑‍🏫' },
-  { label: 'School Average', value: '71%', color: '#3ECFAC', emoji: '📊' },
-  { label: 'At-Risk Students', value: '24', color: '#EF4444', emoji: '⚠️' },
-  { label: 'Avg Wellbeing', value: '7.1/10', color: '#F5C842', emoji: '😊' },
-  { label: 'Tigo Sessions', value: '1,204', color: '#8B5CF6', emoji: '🤖' },
+  { label: 'Total Students', value: '342', emoji: '🎓', gradient: 'from-blue-500/20 to-blue-600/20', border: 'border-blue-400/30' },
+  { label: 'Active Teachers', value: '18', emoji: '🧑‍🏫', gradient: 'from-purple-500/20 to-purple-600/20', border: 'border-purple-400/30' },
+  { label: 'School Average', value: '71%', emoji: '📊', gradient: 'from-teal-500/20 to-teal-600/20', border: 'border-teal-400/30' },
+  { label: 'At Risk Students', value: '24', emoji: '⚠️', gradient: 'from-red-500/20 to-red-600/20', border: 'border-red-400/30' },
+  { label: 'Average Wellbeing', value: '7.1/10', emoji: '😊', gradient: 'from-amber-500/20 to-amber-600/20', border: 'border-amber-400/30' },
+  { label: 'Tigo Sessions', value: '1,204', emoji: '🤖', gradient: 'from-orange-500/20 to-orange-600/20', border: 'border-orange-400/30' },
+];
+
+export const MOCK_TOP_TEACHERS: TopTeacher[] = [
+  { name: 'Ms. Amina Khalil', class: 'Grade 5A', avg: 82, wellbeing: 8.5 },
+  { name: 'Mr. Tariq Nasser', class: 'Grade 3B', avg: 79, wellbeing: 7.8 },
+  { name: 'Ms. Rania Farid', class: 'Grade 6A', avg: 77, wellbeing: 8.1 },
 ];
 
 export const MOCK_GRADE_BREAKDOWN: ChartDataPoint[] = [
@@ -87,6 +101,6 @@ export const MOCK_GRADE_BREAKDOWN: ChartDataPoint[] = [
 export const MOCK_ALERTS: Alert[] = [
   { alert: '3 students below 40% in Grade 5B', type: 'grade', urgency: 'high' },
   { alert: 'Mood drop detected in Grade 3A this week', type: 'wellbeing', urgency: 'medium' },
-  { alert: 'Attendance below 80% — 4 students', type: 'attendance', urgency: 'high' },
+  { alert: 'Attendance below 80% for 4 students', type: 'attendance', urgency: 'high' },
   { alert: 'Speaking anxiety spike in Grade 6B', type: 'anxiety', urgency: 'medium' },
 ];

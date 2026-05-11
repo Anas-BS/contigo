@@ -6,29 +6,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PerformanceBarChart from '@/components/charts/PerformanceBarChart';
 import TigoChat from '@/components/TigoChat';
 import Logo from '@/components/Logo';
-import { Search, UserPlus, MessageSquare, X, BookOpen, Users, AlertTriangle, Smile, CheckCircle2 } from 'lucide-react';
+import {
+  Search,
+  UserPlus,
+  MessageSquare,
+  X,
+  BookOpen,
+  Users,
+  AlertTriangle,
+  Smile,
+  CheckCircle2,
+} from 'lucide-react';
+import { MOCK_STUDENTS } from '@/lib/services/mockData';
+import { GRADE_THRESHOLDS } from '@/lib/constants';
+import { useDebounce } from '@/lib/hooks';
+import { getTrendEmoji, getTrendColorClass, clamp } from '@/lib/utils';
+import type { Student, CEFRLevel } from '@/lib/types';
 
-type Student = {
-  id: number;
-  name: string;
-  grade: number;
-  mood: number;
-  trend: 'up' | 'down' | 'stable';
-  level: 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
-  notes: string[];
-};
+type TeacherStudent = Student & { notes: string[] };
 
-const INITIAL_STUDENTS: Student[] = [
-  { id: 1, name: 'Sara Ahmed', grade: 82, mood: 8, trend: 'up', level: 'B2', notes: [] },
-  { id: 2, name: 'Omar Hassan', grade: 75, mood: 7, trend: 'stable', level: 'B1', notes: [] },
-  { id: 3, name: 'Lena Khalil', grade: 68, mood: 6, trend: 'down', level: 'B1', notes: [] },
-  { id: 4, name: 'Ali Nasser', grade: 91, mood: 9, trend: 'up', level: 'C1', notes: [] },
-  { id: 5, name: 'Fatima Zahra', grade: 55, mood: 5, trend: 'down', level: 'A2', notes: [] },
-  { id: 6, name: 'Hassan Malik', grade: 77, mood: 8, trend: 'up', level: 'B2', notes: [] },
-];
+const INITIAL_STUDENTS: TeacherStudent[] = MOCK_STUDENTS.map((s) => ({ ...s, notes: [] }));
 
-const trendIcon = { up: '↑', down: '↓', stable: '→' };
-const trendColor = { up: 'text-green-400', down: 'text-red-400', stable: 'text-white/40' };
+const NAME_PATTERN = /^[A-Za-zÀ-ÿ' -]+$/;
+const CEFR_OPTIONS: CEFRLevel[] = ['A1', 'A2', 'B1', 'B1+', 'B2', 'C1', 'C2'];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -41,22 +41,32 @@ const itemVariants = {
 };
 
 export default function TeacherDashboard() {
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
+  const [students, setStudents] = useState<TeacherStudent[]>(INITIAL_STUDENTS);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 200);
   const [showAdd, setShowAdd] = useState(false);
-  const [newStudent, setNewStudent] = useState({ name: '', level: 'B1' as Student['level'], grade: '70' });
-  const [activeStudent, setActiveStudent] = useState<number | null>(null);
+  const [newStudent, setNewStudent] = useState<{ name: string; level: CEFRLevel; grade: string }>({
+    name: '',
+    level: 'B1',
+    grade: '70',
+  });
+  const [formError, setFormError] = useState('');
+  const [activeStudent, setActiveStudent] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
 
   const filtered = useMemo(
-    () => students.filter((s) => s.name.toLowerCase().includes(search.toLowerCase())),
-    [students, search]
+    () =>
+      students.filter((s) =>
+        s.name.toLowerCase().includes(debouncedSearch.toLowerCase())
+      ),
+    [students, debouncedSearch]
   );
 
   const stats = useMemo(() => {
-    const avg = students.reduce((s, x) => s + x.grade, 0) / Math.max(students.length, 1);
-    const atRisk = students.filter((x) => x.grade < 60).length;
-    const avgMood = students.reduce((s, x) => s + x.mood, 0) / Math.max(students.length, 1);
+    const len = Math.max(students.length, 1);
+    const avg = students.reduce((s, x) => s + x.grade, 0) / len;
+    const atRisk = students.filter((x) => x.grade < GRADE_THRESHOLDS.atRisk).length;
+    const avgMood = students.reduce((s, x) => s + x.mood, 0) / len;
     return {
       total: students.length,
       classAvg: avg.toFixed(0),
@@ -65,16 +75,33 @@ export default function TeacherDashboard() {
     };
   }, [students]);
 
-  const addStudent = () => {
+  const validateNewStudent = (): string => {
     const name = newStudent.name.trim();
-    const grade = parseInt(newStudent.grade, 10);
-    if (!name || isNaN(grade)) return;
+    if (!name) return 'Name is required.';
+    if (!NAME_PATTERN.test(name))
+      return 'Name can only contain letters, spaces, hyphens, and apostrophes.';
+    const grade = Number(newStudent.grade);
+    if (!Number.isInteger(grade)) return 'Grade must be a whole number.';
+    if (grade < 0 || grade > 100) return 'Grade must be between 0 and 100.';
+    return '';
+  };
+
+  const addStudent = () => {
+    const error = validateNewStudent();
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    setFormError('');
+    const grade = clamp(parseInt(newStudent.grade, 10), 0, 100);
     setStudents((prev) => [
       ...prev,
       {
-        id: Date.now(),
-        name,
-        grade: Math.min(100, Math.max(0, grade)),
+        id: String(Date.now()),
+        name: newStudent.name.trim(),
+        email: `${newStudent.name.trim().toLowerCase().replace(/\s+/g, '.')}@example.com`,
+        role: 'student',
+        grade,
         mood: 7,
         trend: 'stable',
         level: newStudent.level,
@@ -139,16 +166,11 @@ export default function TeacherDashboard() {
         </motion.nav>
 
         <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <h1 className="text-4xl md:text-5xl font-bold text-white">Teacher Dashboard</h1>
             <p className="text-white/60 text-lg mt-2">Grade 5B, English. {stats.total} students under your wing.</p>
           </motion.div>
 
-          {/* KPIs */}
           <motion.div
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
             variants={containerVariants}
@@ -176,7 +198,6 @@ export default function TeacherDashboard() {
             })}
           </motion.div>
 
-          {/* Performance Chart */}
           <motion.div
             className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8"
             initial={{ opacity: 0, y: 20 }}
@@ -189,7 +210,6 @@ export default function TeacherDashboard() {
             </div>
           </motion.div>
 
-          {/* Toolbar */}
           <motion.div
             className="flex flex-col md:flex-row gap-3 items-stretch md:items-center"
             initial={{ opacity: 0, y: 20 }}
@@ -207,7 +227,10 @@ export default function TeacherDashboard() {
               />
             </div>
             <motion.button
-              onClick={() => setShowAdd((v) => !v)}
+              onClick={() => {
+                setShowAdd((v) => !v);
+                setFormError('');
+              }}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30"
@@ -217,7 +240,6 @@ export default function TeacherDashboard() {
             </motion.button>
           </motion.div>
 
-          {/* Add Student Form */}
           <AnimatePresence>
             {showAdd && (
               <motion.div
@@ -226,48 +248,63 @@ export default function TeacherDashboard() {
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl p-6 grid md:grid-cols-4 gap-3">
-                  <input
-                    type="text"
-                    value={newStudent.name}
-                    onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                    placeholder="Full name"
-                    className="bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                  />
-                  <select
-                    value={newStudent.level}
-                    onChange={(e) => setNewStudent({ ...newStudent, level: e.target.value as Student['level'] })}
-                    aria-label="CEFR level"
-                    title="CEFR level"
-                    className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                  >
-                    {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map((l) => (
-                      <option key={l} value={l} className="bg-slate-800">
-                        Level {l}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={newStudent.grade}
-                    onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
-                    placeholder="Grade %"
-                    className="bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                  />
-                  <button
-                    onClick={addStudent}
-                    className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-3 text-sm font-semibold transition-colors"
-                  >
-                    Save Student
-                  </button>
+                <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl p-6 space-y-4">
+                  <div className="grid md:grid-cols-4 gap-3">
+                    <input
+                      type="text"
+                      value={newStudent.name}
+                      onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                      placeholder="Full name"
+                      className="bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
+                    />
+                    <select
+                      value={newStudent.level}
+                      onChange={(e) => setNewStudent({ ...newStudent, level: e.target.value as CEFRLevel })}
+                      aria-label="CEFR level"
+                      title="CEFR level"
+                      className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
+                    >
+                      {CEFR_OPTIONS.map((l) => (
+                        <option key={l} value={l} className="bg-slate-800">
+                          Level {l}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={newStudent.grade}
+                      onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
+                      placeholder="Grade %"
+                      className="bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
+                    />
+                    <button
+                      onClick={addStudent}
+                      className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-3 text-sm font-semibold transition-colors"
+                    >
+                      Save Student
+                    </button>
+                  </div>
+                  <AnimatePresence>
+                    {formError && (
+                      <motion.p
+                        key={formError}
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        role="alert"
+                        className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-lg px-3 py-2"
+                      >
+                        {formError}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Student Table */}
           <motion.div
             className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-6 md:p-8"
             initial={{ opacity: 0, y: 20 }}
@@ -307,14 +344,20 @@ export default function TeacherDashboard() {
                         <td className="py-3">
                           <span
                             className={`font-semibold ${
-                              s.grade >= 80 ? 'text-green-400' : s.grade >= 65 ? 'text-amber-300' : 'text-red-400'
+                              s.grade >= GRADE_THRESHOLDS.high
+                                ? 'text-green-400'
+                                : s.grade >= GRADE_THRESHOLDS.medium
+                                ? 'text-amber-300'
+                                : 'text-red-400'
                             }`}
                           >
                             {s.grade}%
                           </span>
                         </td>
                         <td className="py-3 text-white/80">{s.mood}/10</td>
-                        <td className={`py-3 text-lg ${trendColor[s.trend]}`}>{trendIcon[s.trend]}</td>
+                        <td className={`py-3 text-lg ${getTrendColorClass(s.trend)}`}>
+                          {getTrendEmoji(s.trend)}
+                        </td>
                         <td className="py-3 text-right">
                           <button
                             onClick={() => {
@@ -338,7 +381,6 @@ export default function TeacherDashboard() {
             </div>
           </motion.div>
 
-          {/* Tigo Insight */}
           <motion.div
             className="backdrop-blur-md bg-gradient-to-r from-orange-500/20 to-purple-500/20 border border-orange-400/30 rounded-2xl p-8"
             initial={{ opacity: 0, y: 20 }}
@@ -358,7 +400,7 @@ export default function TeacherDashboard() {
                 <p className="font-semibold text-white text-lg mb-2">Tigo Insight</p>
                 <p className="text-white/80">
                   {stats.atRisk > 0
-                    ? `${stats.atRisk} student${stats.atRisk > 1 ? 's are' : ' is'} below 60%. A short one to one check in this week could lift their confidence and grade.`
+                    ? `${stats.atRisk} student${stats.atRisk > 1 ? 's are' : ' is'} below ${GRADE_THRESHOLDS.atRisk}%. A short one to one check in this week could lift their confidence and grade.`
                     : 'No one is in the danger zone right now. Consider stretching your top performers with a creative speaking task.'}
                 </p>
               </div>
@@ -367,7 +409,6 @@ export default function TeacherDashboard() {
         </div>
       </div>
 
-      {/* Note Modal */}
       <AnimatePresence>
         {active && (
           <motion.div

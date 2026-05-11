@@ -1,69 +1,43 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import SkillsChart from '@/components/charts/SkillsChart';
 import MoodChart from '@/components/charts/MoodChart';
 import TigoChat from '@/components/TigoChat';
 import Logo from '@/components/Logo';
 import { TrendingUp, Zap, Award, Flame, Plus, Target, Smile } from 'lucide-react';
+import { MOCK_ACTIVITIES, MOCK_MOOD_DATA } from '@/lib/services/mockData';
+import type { Activity, ChartDataPoint } from '@/lib/types';
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
   },
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: 'easeOut',
-    },
-  },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } },
 };
 
 const cardHoverVariants = {
   scale: 1.02,
   boxShadow: '0px 20px 40px rgba(249, 123, 79, 0.15)',
-  transition: {
-    type: 'spring',
-    stiffness: 400,
-    damping: 10,
-  },
+  transition: { type: 'spring', stiffness: 400, damping: 10 },
 };
 
 export default function StudentDashboard() {
   const [moodToday, setMoodToday] = useState(7);
-  const [moodHistory, setMoodHistory] = useState([
-    { date: 'Mon', mood: 7 },
-    { date: 'Tue', mood: 6 },
-    { date: 'Wed', mood: 8 },
-    { date: 'Thu', mood: 5 },
-    { date: 'Fri', mood: 9 },
-    { date: 'Sat', mood: 7 },
-    { date: 'Sun', mood: 8 },
-  ]);
+  const [moodHistory, setMoodHistory] = useState<ChartDataPoint[]>(MOCK_MOOD_DATA);
   const [moodLogged, setMoodLogged] = useState(false);
   const [goal, setGoal] = useState('Reach B2 speaking level by July');
   const [goalDraft, setGoalDraft] = useState('');
   const [editingGoal, setEditingGoal] = useState(false);
   const [logEntry, setLogEntry] = useState('');
-  const [activity, setActivity] = useState([
-    { id: 1, title: 'Completed Speaking Practice', time: '2 hours ago', icon: '🎤' },
-    { id: 2, title: 'Improved Listening Score', time: '5 hours ago', icon: '👂' },
-    { id: 3, title: 'Vocabulary Quiz: 92%', time: 'Yesterday', icon: '📚' },
-    { id: 4, title: 'Attended Live Class', time: '2 days ago', icon: '👥' },
-  ]);
+  const [activity, setActivity] = useState<Activity[]>(MOCK_ACTIVITIES);
 
   const logMood = () => {
     setMoodHistory((prev) => {
@@ -95,77 +69,28 @@ export default function StudentDashboard() {
   const moodEmoji = moodToday >= 8 ? '😄' : moodToday >= 6 ? '🙂' : moodToday >= 4 ? '😐' : '😟';
 
   const KPI_CARDS = [
-    {
-      label: 'Overall Grade',
-      value: '87%',
-      icon: Award,
-      color: 'from-blue-500/20 to-blue-600/20',
-      borderColor: 'border-blue-400/30',
-      trend: '+5%',
-      trendUp: true,
-    },
-    {
-      label: 'Mood Score',
-      value: '8.2/10',
-      icon: Zap,
-      color: 'from-purple-500/20 to-purple-600/20',
-      borderColor: 'border-purple-400/30',
-      trend: '+0.5',
-      trendUp: true,
-    },
-    {
-      label: 'Speaking Level',
-      value: 'B1+',
-      icon: TrendingUp,
-      color: 'from-orange-500/20 to-orange-600/20',
-      borderColor: 'border-orange-400/30',
-      trend: '+1 level',
-      trendUp: true,
-    },
-    {
-      label: 'Current Streak',
-      value: '12 Days',
-      icon: Flame,
-      color: 'from-red-500/20 to-red-600/20',
-      borderColor: 'border-red-400/30',
-      trend: 'Keep it up!',
-      trendUp: true,
-    },
+    { label: 'Overall Grade', value: '87%', icon: Award, color: 'from-blue-500/20 to-blue-600/20', borderColor: 'border-blue-400/30', trend: '+5%' },
+    { label: 'Mood Score', value: '8.2/10', icon: Zap, color: 'from-purple-500/20 to-purple-600/20', borderColor: 'border-purple-400/30', trend: '+0.5' },
+    { label: 'Speaking Level', value: 'B1+', icon: TrendingUp, color: 'from-orange-500/20 to-orange-600/20', borderColor: 'border-orange-400/30', trend: '+1 level' },
+    { label: 'Current Streak', value: '12 Days', icon: Flame, color: 'from-red-500/20 to-red-600/20', borderColor: 'border-red-400/30', trend: 'Keep it up!' },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Animated Background */}
       <div className="fixed inset-0 pointer-events-none">
         <motion.div
           className="absolute top-0 right-0 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"
-          animate={{
-            x: [0, 50, -50, 0],
-            y: [0, 100, -100, 0],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
+          animate={{ x: [0, 50, -50, 0], y: [0, 100, -100, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
           className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"
-          animate={{
-            x: [0, -50, 50, 0],
-            y: [0, -100, 100, 0],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
+          animate={{ x: [0, -50, 50, 0], y: [0, -100, 100, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
         />
       </div>
 
-      {/* Content */}
       <div className="relative z-10">
-        {/* Navigation */}
         <motion.nav
           className="backdrop-blur-md bg-white/5 border-b border-white/10 sticky top-0 z-40"
           initial={{ opacity: 0, y: -20 }}
@@ -174,10 +99,7 @@ export default function StudentDashboard() {
         >
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <Logo size={112} />
-            <motion.div
-              className="flex items-center gap-4"
-              whileHover={{ scale: 1.05 }}
-            >
+            <motion.div className="flex items-center gap-4" whileHover={{ scale: 1.05 }}>
               <span className="text-white/70 text-sm">Welcome, Sarah</span>
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold">
                 SA
@@ -186,24 +108,17 @@ export default function StudentDashboard() {
           </div>
         </motion.nav>
 
-        {/* Main Content */}
         <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-          {/* Header */}
           <motion.div
             className="space-y-2"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-white">
-              My Journey
-            </h1>
-            <p className="text-white/60 text-lg">
-              Track your progress and celebrate your wins.
-            </p>
+            <h1 className="text-4xl md:text-5xl font-bold text-white">My Journey</h1>
+            <p className="text-white/60 text-lg">Track your progress and celebrate your wins.</p>
           </motion.div>
 
-          {/* KPI Cards Grid */}
           <motion.div
             className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
             variants={containerVariants}
@@ -214,7 +129,7 @@ export default function StudentDashboard() {
               const Icon = card.icon;
               return (
                 <motion.div
-                  key={index}
+                  key={card.label}
                   className={`backdrop-blur-md bg-gradient-to-br ${card.color} border ${card.borderColor} rounded-2xl p-6 hover:border-white/30 transition-all cursor-pointer group`}
                   variants={itemVariants}
                   whileHover={cardHoverVariants}
@@ -235,7 +150,6 @@ export default function StudentDashboard() {
                       {card.trend}
                     </motion.span>
                   </div>
-
                   <p className="text-white/70 text-sm mb-2">{card.label}</p>
                   <p className="text-3xl font-bold text-white">{card.value}</p>
                 </motion.div>
@@ -243,14 +157,12 @@ export default function StudentDashboard() {
             })}
           </motion.div>
 
-          {/* Charts Section */}
           <motion.div
             className="grid md:grid-cols-2 gap-6"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
-            {/* Skills Chart */}
             <motion.div
               className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
               variants={itemVariants}
@@ -262,7 +174,6 @@ export default function StudentDashboard() {
               </div>
             </motion.div>
 
-            {/* Mood Chart */}
             <motion.div
               className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
               variants={itemVariants}
@@ -270,19 +181,19 @@ export default function StudentDashboard() {
             >
               <h2 className="text-xl font-bold text-white mb-6">Weekly Mood Trend</h2>
               <div className="h-64 flex items-center justify-center">
-                <MoodChart data={moodHistory.map((m) => ({ date: m.date, mood: m.mood }))} />
+                <MoodChart
+                  data={moodHistory.map((m) => ({ date: m.date ?? '', mood: m.mood ?? 0 }))}
+                />
               </div>
             </motion.div>
           </motion.div>
 
-          {/* Interactive Inputs Grid */}
           <motion.div
             className="grid md:grid-cols-2 gap-6"
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
-            {/* Mood Check-in */}
             <motion.div
               className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
               variants={itemVariants}
@@ -331,13 +242,11 @@ export default function StudentDashboard() {
               </motion.button>
             </motion.div>
 
-            {/* Goal & Daily Log */}
             <motion.div
               className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all space-y-6"
               variants={itemVariants}
               whileHover={cardHoverVariants}
             >
-              {/* Goal */}
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-xl bg-blue-500/20 border border-blue-400/30">
@@ -385,7 +294,6 @@ export default function StudentDashboard() {
                 )}
               </div>
 
-              {/* Daily Log */}
               <div className="border-t border-white/10 pt-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-xl bg-orange-500/20 border border-orange-400/30">
@@ -415,7 +323,6 @@ export default function StudentDashboard() {
             </motion.div>
           </motion.div>
 
-          {/* Recent Activity Section */}
           <motion.div
             className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
             variants={itemVariants}
@@ -424,7 +331,6 @@ export default function StudentDashboard() {
             transition={{ duration: 0.6, delay: 0.4 }}
           >
             <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
-
             <div className="space-y-4">
               <AnimatePresence>
                 {activity.map((entry, index) => (
@@ -455,7 +361,6 @@ export default function StudentDashboard() {
             </div>
           </motion.div>
 
-          {/* Tigo Insight Banner */}
           <motion.div
             className="backdrop-blur-md bg-gradient-to-r from-orange-500/20 to-purple-500/20 border border-orange-400/30 rounded-2xl p-8 space-y-4"
             initial={{ opacity: 0, y: 20 }}
@@ -482,7 +387,6 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      {/* Tigo Chat */}
       <TigoChat />
     </div>
   );
