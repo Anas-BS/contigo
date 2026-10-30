@@ -17,6 +17,8 @@ export interface Student extends User {
   trend: TrendDirection;
   streak?: number;
   seatId?: string;
+  /** Attendance this term, as a percentage of sessions attended. */
+  attendance?: number;
 }
 
 export interface Teacher extends User {
@@ -43,11 +45,21 @@ export interface KPI {
   trendUp: boolean;
 }
 
+export type ActivityKind = 'practice' | 'assessment' | 'class' | 'note';
+
 export interface Activity {
   id: number;
   title: string;
   time: string;
-  icon: string;
+  kind: ActivityKind;
+}
+
+export interface UpcomingItem {
+  id: string;
+  title: string;
+  when: string;
+  kind: 'assessment' | 'class' | 'deadline';
+  detail: string;
 }
 
 export interface ChartDataPoint {

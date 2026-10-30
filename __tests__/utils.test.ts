@@ -8,21 +8,24 @@ import {
   clamp,
   getTrendEmoji,
   getTrendColorClass,
+  getAttentionReasons,
+  scoreTone,
+  mean,
 } from '@/lib/utils';
 import type { Seat } from '@/lib/types';
 
 describe('getScoreColorClass', () => {
-  it('returns green for >= 80', () => {
-    expect(getScoreColorClass(80)).toBe('text-green-600');
-    expect(getScoreColorClass(99)).toBe('text-green-600');
+  it('returns positive for >= 80', () => {
+    expect(getScoreColorClass(80)).toBe('text-positive');
+    expect(getScoreColorClass(99)).toBe('text-positive');
   });
-  it('returns amber for 65 to 79', () => {
-    expect(getScoreColorClass(65)).toBe('text-amber-600');
-    expect(getScoreColorClass(79)).toBe('text-amber-600');
+  it('returns caution for 65 to 79', () => {
+    expect(getScoreColorClass(65)).toBe('text-caution');
+    expect(getScoreColorClass(79)).toBe('text-caution');
   });
-  it('returns red for < 65', () => {
-    expect(getScoreColorClass(64)).toBe('text-red-500');
-    expect(getScoreColorClass(0)).toBe('text-red-500');
+  it('returns critical for < 65', () => {
+    expect(getScoreColorClass(64)).toBe('text-critical');
+    expect(getScoreColorClass(0)).toBe('text-critical');
   });
 });
 
@@ -132,13 +135,42 @@ describe('getTrendEmoji', () => {
 });
 
 describe('getTrendColorClass', () => {
-  it('up is green', () => {
-    expect(getTrendColorClass('up')).toBe('text-green-500');
+  it('up is positive', () => {
+    expect(getTrendColorClass('up')).toBe('text-positive');
   });
-  it('down is red', () => {
-    expect(getTrendColorClass('down')).toBe('text-red-500');
+  it('down is critical', () => {
+    expect(getTrendColorClass('down')).toBe('text-critical');
   });
   it('stable is neutral', () => {
-    expect(getTrendColorClass('stable')).toBe('text-gray-400');
+    expect(getTrendColorClass('stable')).toBe('text-ink-500');
+  });
+});
+
+describe('scoreTone', () => {
+  it('maps thresholds to tones', () => {
+    expect(scoreTone(85)).toBe('positive');
+    expect(scoreTone(70)).toBe('caution');
+    expect(scoreTone(40)).toBe('critical');
+  });
+});
+
+describe('getAttentionReasons', () => {
+  it('returns nothing for a student doing well', () => {
+    expect(getAttentionReasons({ grade: 82, mood: 8, trend: 'up', attendance: 96 })).toEqual([]);
+  });
+  it('lists every reason that applies', () => {
+    const reasons = getAttentionReasons({ grade: 55, mood: 5, trend: 'down', attendance: 79 });
+    expect(reasons).toHaveLength(4);
+    expect(reasons[0]).toMatch(/Grade 55%/);
+  });
+  it('ignores missing attendance', () => {
+    expect(getAttentionReasons({ grade: 90, mood: 9, trend: 'stable' })).toEqual([]);
+  });
+});
+
+describe('mean', () => {
+  it('averages values and handles empty input', () => {
+    expect(mean([60, 80])).toBe(70);
+    expect(mean([])).toBe(0);
   });
 });

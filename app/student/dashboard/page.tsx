@@ -1,33 +1,32 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import SkillsChart from '@/components/charts/SkillsChart';
-import MoodChart from '@/components/charts/MoodChart';
-import TigoChat from '@/components/TigoChat';
-import Logo from '@/components/Logo';
-import { TrendingUp, Zap, Award, Flame, Plus, Target, Smile } from 'lucide-react';
-import { MOCK_ACTIVITIES, MOCK_MOOD_DATA } from '@/lib/services/mockData';
-import type { Activity, ChartDataPoint } from '@/lib/types';
+import { useMemo, useState, type FormEvent } from 'react';
+import { Button, Input, PageHeader, Panel, StatusTag } from '@/components/ui';
+import { cx } from '@/components/ui/cx';
+import { BarList } from '@/components/charts/BarList';
+import { ColumnStrip } from '@/components/charts/ColumnStrip';
+import { MOCK_ACTIVITIES, MOCK_MOOD_DATA, MOCK_SKILLS_DATA, MOCK_UPCOMING } from '@/lib/services/mockData';
+import { mean, round } from '@/lib/utils';
+import type { Activity, ActivityKind, CEFRLevel, ChartDataPoint } from '@/lib/types';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-};
+const CEFR_STEPS: CEFRLevel[] = ['A1', 'A2', 'B1', 'B1+', 'B2', 'C1', 'C2'];
+/** Speaking level; the overall course level shown to teachers can differ. */
+const CURRENT_LEVEL: CEFRLevel = 'B1+';
+const GOAL_LEVEL: CEFRLevel = 'B2';
+/** Indicative skill score expected at the goal level, for this demo. */
+const GOAL_TARGET = 75;
+const STREAK_DAYS = 12;
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } },
-};
+const KIND_LABEL: Record<ActivityKind, string> = { practice: 'Practice', assessment: 'Assessment', class: 'Class', note: 'Your note' };
+const UPCOMING_TONE = { assessment: 'info', class: 'neutral', deadline: 'brand' } as const;
 
-const cardHoverVariants = {
-  scale: 1.02,
-  boxShadow: '0px 20px 40px rgba(249, 123, 79, 0.15)',
-  transition: { type: 'spring', stiffness: 400, damping: 10 },
-};
+function moodWord(v: number) {
+  if (v <= 2) return 'Rough';
+  if (v <= 4) return 'Low';
+  if (v <= 6) return 'Okay';
+  if (v <= 8) return 'Good';
+  return 'Great';
+}
 
 export default function StudentDashboard() {
   const [moodToday, setMoodToday] = useState(7);
@@ -39,6 +38,16 @@ export default function StudentDashboard() {
   const [logEntry, setLogEntry] = useState('');
   const [activity, setActivity] = useState<Activity[]>(MOCK_ACTIVITIES);
 
+  const skills = useMemo(
+    () => MOCK_SKILLS_DATA.map((s) => ({ skill: s.skill ?? '', score: s.score ?? 0 })),
+    []
+  );
+  const ranked = [...skills].sort((a, b) => b.score - a.score);
+  const strongest = ranked[0];
+  const weakest = ranked[ranked.length - 1];
+  const average = round(mean(skills.map((s) => s.score)));
+  const belowTarget = skills.filter((s) => s.score < GOAL_TARGET);
+
   const logMood = () => {
     setMoodHistory((prev) => {
       const next = [...prev];
@@ -46,348 +55,190 @@ export default function StudentDashboard() {
       return next;
     });
     setMoodLogged(true);
-    setTimeout(() => setMoodLogged(false), 2000);
   };
 
-  const addLogEntry = () => {
+  const addLogEntry = (e: FormEvent) => {
+    e.preventDefault();
     const text = logEntry.trim();
     if (!text) return;
-    setActivity((prev) => [
-      { id: Date.now(), title: text, time: 'Just now', icon: '✏️' },
-      ...prev,
-    ]);
+    setActivity((prev) => [{ id: Date.now(), title: text, time: 'Just now', kind: 'note' }, ...prev]);
     setLogEntry('');
   };
 
-  const saveGoal = () => {
+  const saveGoal = (e: FormEvent) => {
+    e.preventDefault();
     const value = goalDraft.trim();
     if (value) setGoal(value);
     setEditingGoal(false);
     setGoalDraft('');
   };
 
-  const moodEmoji = moodToday >= 8 ? '😄' : moodToday >= 6 ? '🙂' : moodToday >= 4 ? '😐' : '😟';
-
-  const KPI_CARDS = [
-    { label: 'Overall Grade', value: '87%', icon: Award, color: 'from-blue-500/20 to-blue-600/20', borderColor: 'border-blue-400/30', trend: '+5%' },
-    { label: 'Mood Score', value: '8.2/10', icon: Zap, color: 'from-purple-500/20 to-purple-600/20', borderColor: 'border-purple-400/30', trend: '+0.5' },
-    { label: 'Speaking Level', value: 'B1+', icon: TrendingUp, color: 'from-orange-500/20 to-orange-600/20', borderColor: 'border-orange-400/30', trend: '+1 level' },
-    { label: 'Current Streak', value: '12 Days', icon: Flame, color: 'from-red-500/20 to-red-600/20', borderColor: 'border-red-400/30', trend: 'Keep it up!' },
-  ];
+  const currentIdx = CEFR_STEPS.indexOf(CURRENT_LEVEL);
+  const goalIdx = CEFR_STEPS.indexOf(GOAL_LEVEL);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="fixed inset-0 pointer-events-none">
-        <motion.div
-          className="absolute top-0 right-0 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"
-          animate={{ x: [0, 50, -50, 0], y: [0, 100, -100, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"
-          animate={{ x: [0, -50, 50, 0], y: [0, -100, 100, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Grade 5B · English · Term 2, week 11"
+        title="Your progress, Sara"
+        description={`You average ${average}% across six skills. ${strongest.skill} is your strongest; ${weakest.skill.toLowerCase()} is where practice will pay off most.`}
+      />
 
-      <div className="relative z-10">
-        <motion.nav
-          className="backdrop-blur-md bg-white/5 border-b border-white/10 sticky top-0 z-40"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Logo size={112} />
-            <motion.div className="flex items-center gap-4" whileHover={{ scale: 1.05 }}>
-              <span className="text-white/70 text-sm">Welcome, Sarah</span>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-bold">
-                SA
-              </div>
-            </motion.div>
-          </div>
-        </motion.nav>
-
-        <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-          <motion.div
-            className="space-y-2"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="space-y-6 lg:col-span-8">
+          <Panel
+            title="Your goal"
+            actions={
+              !editingGoal && (
+                <Button variant="ghost" size="sm" onClick={() => { setGoalDraft(goal); setEditingGoal(true); }}>
+                  Edit goal
+                </Button>
+              )
+            }
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-white">My Journey</h1>
-            <p className="text-white/60 text-lg">Track your progress and celebrate your wins.</p>
-          </motion.div>
-
-          <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {KPI_CARDS.map((card, index) => {
-              const Icon = card.icon;
-              return (
-                <motion.div
-                  key={card.label}
-                  className={`backdrop-blur-md bg-gradient-to-br ${card.color} border ${card.borderColor} rounded-2xl p-6 hover:border-white/30 transition-all cursor-pointer group`}
-                  variants={itemVariants}
-                  whileHover={cardHoverVariants}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <motion.div
-                      className="p-3 rounded-xl bg-white/10 group-hover:bg-white/20 transition-all"
-                      whileHover={{ rotate: 10, scale: 1.1 }}
-                    >
-                      <Icon className="w-6 h-6 text-orange-400" />
-                    </motion.div>
-                    <motion.span
-                      className="text-xs font-semibold text-green-400 bg-green-500/20 px-2 py-1 rounded-full"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.3 + index * 0.1 }}
-                    >
-                      {card.trend}
-                    </motion.span>
-                  </div>
-                  <p className="text-white/70 text-sm mb-2">{card.label}</p>
-                  <p className="text-3xl font-bold text-white">{card.value}</p>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-
-          <motion.div
-            className="grid md:grid-cols-2 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.div
-              className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
-              variants={itemVariants}
-              whileHover={cardHoverVariants}
-            >
-              <h2 className="text-xl font-bold text-white mb-6">Your Skills Profile</h2>
-              <div className="h-64 flex items-center justify-center">
-                <SkillsChart />
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
-              variants={itemVariants}
-              whileHover={cardHoverVariants}
-            >
-              <h2 className="text-xl font-bold text-white mb-6">Weekly Mood Trend</h2>
-              <div className="h-64 flex items-center justify-center">
-                <MoodChart
-                  data={moodHistory.map((m) => ({ date: m.date ?? '', mood: m.mood ?? 0 }))}
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-
-          <motion.div
-            className="grid md:grid-cols-2 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.div
-              className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
-              variants={itemVariants}
-              whileHover={cardHoverVariants}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-xl bg-purple-500/20 border border-purple-400/30">
-                  <Smile className="w-5 h-5 text-purple-300" />
-                </div>
-                <h2 className="text-xl font-bold text-white">Daily Mood Check in</h2>
-              </div>
-              <p className="text-white/60 text-sm mb-6">How are you feeling today?</p>
-              <div className="flex items-center justify-center mb-6">
-                <motion.span
-                  key={moodEmoji}
-                  className="text-7xl"
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                >
-                  {moodEmoji}
-                </motion.span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={10}
-                value={moodToday}
-                onChange={(e) => setMoodToday(Number(e.target.value))}
-                aria-label="Mood score from 1 to 10"
-                title="Mood score from 1 to 10"
-                className="w-full accent-orange-400"
-              />
-              <div className="flex justify-between text-xs text-white/50 mt-2 mb-6">
-                <span>Rough day</span>
-                <span className="text-orange-300 font-semibold">{moodToday}/10</span>
-                <span>Amazing</span>
-              </div>
-              <motion.button
-                onClick={logMood}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 rounded-xl font-semibold shadow-lg shadow-orange-500/30"
-              >
-                {moodLogged ? '✓ Logged' : 'Save Today\u2019s Mood'}
-              </motion.button>
-            </motion.div>
-
-            <motion.div
-              className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all space-y-6"
-              variants={itemVariants}
-              whileHover={cardHoverVariants}
-            >
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-xl bg-blue-500/20 border border-blue-400/30">
-                    <Target className="w-5 h-5 text-blue-300" />
-                  </div>
-                  <h2 className="text-xl font-bold text-white">Current Goal</h2>
-                </div>
-                {!editingGoal ? (
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-white/80 text-sm leading-relaxed flex-1">{goal}</p>
-                    <button
-                      onClick={() => {
-                        setGoalDraft(goal);
-                        setEditingGoal(true);
-                      }}
-                      className="text-xs text-orange-300 hover:text-orange-200 font-medium whitespace-nowrap"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={goalDraft}
-                      onChange={(e) => setGoalDraft(e.target.value)}
-                      placeholder="Write a clear, kind goal for yourself"
-                      className="w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={saveGoal}
-                        className="flex-1 bg-orange-500 text-white py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition-colors"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingGoal(false)}
-                        className="flex-1 bg-white/10 text-white py-2 rounded-lg text-sm font-semibold hover:bg-white/20 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-white/10 pt-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-xl bg-orange-500/20 border border-orange-400/30">
-                    <Plus className="w-5 h-5 text-orange-300" />
-                  </div>
-                  <h2 className="text-xl font-bold text-white">Log a Quick Win</h2>
-                </div>
+            {editingGoal ? (
+              <form onSubmit={saveGoal} className="space-y-3">
+                <label htmlFor="goal" className="block text-[13px] font-medium text-ink-700">Goal, in your own words</label>
+                <Input id="goal" autoFocus value={goalDraft} onChange={(e) => setGoalDraft(e.target.value)} placeholder="For example: give a two-minute talk without notes" />
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={logEntry}
-                    onChange={(e) => setLogEntry(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addLogEntry()}
-                    placeholder="What did you practice today?"
-                    className="flex-1 bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                  />
-                  <motion.button
-                    onClick={addLogEntry}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 rounded-xl font-semibold"
-                  >
-                    Add
-                  </motion.button>
+                  <Button type="submit" size="sm">Save</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingGoal(false)}>Cancel</Button>
                 </div>
-              </div>
-            </motion.div>
-          </motion.div>
+              </form>
+            ) : (
+              <p className="font-display text-[1.6rem] leading-8 text-ink">{goal}</p>
+            )}
 
-          <motion.div
-            className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8 hover:border-white/30 transition-all"
-            variants={itemVariants}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <h2 className="text-xl font-bold text-white mb-6">Recent Activity</h2>
-            <div className="space-y-4">
-              <AnimatePresence>
-                {activity.map((entry, index) => (
-                  <motion.div
-                    key={entry.id}
-                    layout
-                    className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all group"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ delay: 0.05 * index }}
-                    whileHover={{ x: 5 }}
-                  >
-                    <span className="text-2xl">{entry.icon}</span>
-                    <div className="flex-1">
-                      <p className="text-white font-medium">{entry.title}</p>
-                      <p className="text-white/50 text-sm">{entry.time}</p>
-                    </div>
-                    <motion.div
-                      className="text-white/40 group-hover:text-orange-400 transition-colors"
-                      whileHover={{ x: 5 }}
-                    >
-                      →
-                    </motion.div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+            <div className="mt-6">
+              <p className="label mb-3">Speaking level</p>
+              <ol className="grid grid-cols-7" aria-label={`Speaking level track. Current level ${CURRENT_LEVEL}, goal ${GOAL_LEVEL}.`}>
+                {CEFR_STEPS.map((step, i) => {
+                  const done = i <= currentIdx;
+                  const isGoal = i === goalIdx;
+                  return (
+                    <li key={step} className="relative flex flex-col items-center" aria-current={i === currentIdx ? 'step' : undefined}>
+                      <span
+                        aria-hidden="true"
+                        className={cx('absolute left-0 right-1/2 top-[7px] h-0.5', i === 0 ? 'invisible' : i <= currentIdx ? 'bg-ink' : i <= goalIdx ? 'bg-ember-300' : 'bg-line')}
+                      />
+                      <span
+                        aria-hidden="true"
+                        className={cx('absolute left-1/2 right-0 top-[7px] h-0.5', i === CEFR_STEPS.length - 1 ? 'invisible' : i < currentIdx ? 'bg-ink' : i < goalIdx ? 'bg-ember-300' : 'bg-line')}
+                      />
+                      <span
+                        aria-hidden="true"
+                        className={cx(
+                          'relative z-10 h-4 w-4 rounded-full border-2',
+                          i === currentIdx ? 'border-ink bg-ink ring-4 ring-ink/10' : done ? 'border-ink bg-ink' : isGoal ? 'border-ember-600 bg-paper-raised' : 'border-line-strong bg-paper-raised'
+                        )}
+                      />
+                      <span className={cx('num mt-2 text-[13px]', i === currentIdx ? 'font-semibold text-ink' : isGoal ? 'font-medium text-ember-700' : 'text-ink-500')}>{step}</span>
+                      <span className="mt-0.5 h-4 text-2xs text-ink-500">{i === currentIdx ? 'Now' : isGoal ? 'Goal' : ''}</span>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
-          </motion.div>
 
-          <motion.div
-            className="backdrop-blur-md bg-gradient-to-r from-orange-500/20 to-purple-500/20 border border-orange-400/30 rounded-2xl p-8 space-y-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            whileHover={{ scale: 1.02 }}
-          >
-            <div className="flex items-start gap-4">
-              <motion.span
-                className="text-3xl"
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-                🤖
-              </motion.span>
-              <div className="flex-1">
-                <p className="font-semibold text-white text-lg mb-2">Tigo Insight</p>
-                <p className="text-white/80">
-                  You are on an amazing streak. Your speaking confidence climbed 15% this month. Keep going with the daily speaking challenges to reach B2 level. 🎯
-                </p>
+            <div className="mt-5 grid gap-4 border-t border-line pt-4 sm:grid-cols-3">
+              <div>
+                <p className="label">Skills at target</p>
+                <p className="num mt-1 text-sm text-ink"><span className="font-display text-2xl">{skills.length - belowTarget.length}</span> of {skills.length}</p>
+              </div>
+              <div>
+                <p className="label">Practice streak</p>
+                <p className="num mt-1 text-sm text-ink"><span className="font-display text-2xl">{STREAK_DAYS}</span> days</p>
+              </div>
+              <div>
+                <p className="label">Next step</p>
+                <p className="mt-1 text-sm leading-5 text-ink-700">Two short {weakest.skill.toLowerCase()} sessions before Monday’s essay draft.</p>
               </div>
             </div>
-          </motion.div>
+          </Panel>
+
+          <Panel title="Skills" description={`Compared with an indicative ${GOAL_TARGET}% for ${GOAL_LEVEL}. Highlighted skills are below it.`}>
+            <BarList
+              label="Skill scores"
+              data={skills.map((s) => ({ key: s.skill, label: s.skill, value: s.score, emphasis: s.score < GOAL_TARGET }))}
+              reference={{ value: GOAL_TARGET, label: `${GOAL_LEVEL} target` }}
+            />
+          </Panel>
+
+          <Panel title="Activity" description="Your recent work and anything you log yourself." flush>
+            <form onSubmit={addLogEntry} className="flex gap-2 border-b border-line px-5 py-4">
+              <label htmlFor="quick-win" className="sr-only">Log something you practised</label>
+              <Input id="quick-win" value={logEntry} onChange={(e) => setLogEntry(e.target.value)} placeholder="Log something you practised today" autoComplete="off" />
+              <Button type="submit" variant="secondary" disabled={!logEntry.trim()}>Log</Button>
+            </form>
+            <ol className="divide-y divide-line">
+              {activity.map((entry) => (
+                <li key={entry.id} className="grid grid-cols-[1fr_auto] items-baseline gap-x-4 gap-y-1 px-5 py-3 sm:grid-cols-[7rem_1fr_auto]">
+                  <span className="order-3 col-span-2 sm:order-none sm:col-span-1">
+                    <StatusTag tone={entry.kind === 'note' ? 'brand' : entry.kind === 'assessment' ? 'info' : 'neutral'}>{KIND_LABEL[entry.kind]}</StatusTag>
+                  </span>
+                  <span className="text-sm text-ink">{entry.title}</span>
+                  <span className="text-[13px] text-ink-500">{entry.time}</span>
+                </li>
+              ))}
+            </ol>
+          </Panel>
+        </div>
+
+        <div className="space-y-6 lg:col-span-4">
+          <Panel title="Daily check-in" description="Only you and your teacher can see this.">
+            <div className="flex items-baseline justify-between">
+              <label htmlFor="mood" className="text-sm text-ink-700">How are you feeling today?</label>
+              <p className="text-sm" aria-hidden="true">
+                <span className="num font-display text-2xl text-ink">{moodToday}</span>
+                <span className="text-ink-500">/10 · {moodWord(moodToday)}</span>
+              </p>
+            </div>
+            <input
+              id="mood"
+              type="range"
+              min={1}
+              max={10}
+              value={moodToday}
+              aria-valuetext={`${moodToday} out of 10, ${moodWord(moodToday)}`}
+              onChange={(e) => { setMoodToday(Number(e.target.value)); setMoodLogged(false); }}
+              className="mt-3 w-full"
+            />
+            <div className="mt-1 flex justify-between text-2xs text-ink-500" aria-hidden="true">
+              <span>Rough</span>
+              <span>Great</span>
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <Button onClick={logMood} size="sm">{moodLogged ? 'Update check-in' : 'Save check-in'}</Button>
+              <p role="status" aria-live="polite" className="text-[13px] text-positive">{moodLogged ? 'Saved for today' : ''}</p>
+            </div>
+            <div className="mt-6 border-t border-line pt-4">
+              <p className="label mb-3">This week</p>
+              <ColumnStrip
+                title="Check-ins this week, out of 10"
+                unit="/10"
+                max={10}
+                height={84}
+                data={moodHistory.map((m, i) => ({ label: m.date ?? '', value: m.mood ?? 0, highlight: i === moodHistory.length - 1 }))}
+              />
+            </div>
+          </Panel>
+
+          <Panel title="Coming up" flush>
+            <ol className="divide-y divide-line">
+              {MOCK_UPCOMING.map((u) => (
+                <li key={u.id} className="px-5 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="num text-[13px] font-medium text-ink">{u.when}</p>
+                    <StatusTag tone={UPCOMING_TONE[u.kind]}>{u.kind === 'deadline' ? 'Due' : u.kind === 'assessment' ? 'Assessment' : 'Class'}</StatusTag>
+                  </div>
+                  <p className="mt-1 text-sm font-medium text-ink">{u.title}</p>
+                  <p className="mt-0.5 text-[13px] leading-5 text-ink-500">{u.detail}</p>
+                </li>
+              ))}
+            </ol>
+          </Panel>
         </div>
       </div>
-
-      <TigoChat />
     </div>
   );
 }

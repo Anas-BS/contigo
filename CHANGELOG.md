@@ -1,3 +1,28 @@
+# Changelog
+
+## Editorial redesign
+
+### Changed
+- New design system (see `DESIGN_SYSTEM.md`): warm paper and ink palette, Contigo Orange reserved for emphasis, Newsreader / IBM Plex type, shared `components/ui` and `components/charts`.
+- Rebuilt every page on the shared system: landing, login, student, teacher, classroom, admin, 404 and the error boundary.
+- Teacher overview is now organised around "needs attention this week", with the reason for each flag, a class trend, follow-up notes and a sortable, filterable roster.
+- Admin overview opens with a written summary derived from the data; the grade selector now highlights a grade against the school average.
+- Fonts are self-hosted with `next/font/local`, so builds no longer need network access to Google Fonts.
+
+### Fixed
+- Seating heatmap colours were never generated (`lib/` was missing from Tailwind `content`); seats rendered grey.
+- Seating grid collapsed to two columns on mobile; it now keeps the room's six columns.
+- Login: real `<form>` (Enter submits), visible labels, per-field errors, focus on the first error, and the `next` redirect is honoured when the role allows it.
+- Added a working sign-out.
+- Notes dialog: `role="dialog"`, focus trap, Escape and focus return.
+- Tigo answers from the sample data instead of a fixed canned reply, and says so when it cannot answer.
+- Removed a fabricated "expected lift" figure from the admin dashboard.
+- All motion respects `prefers-reduced-motion`; no infinite animations remain.
+- Form control borders meet WCAG 1.4.11 non-text contrast.
+
+### Removed
+- `framer-motion` and `recharts` dependencies (First Load JS per route down from 149–265 kB to 108–118 kB).
+
 # Contigo - Améliorations Appliquées ✅
 
 Ce document résume toutes les améliorations et corrections apportées au projet Contigo.

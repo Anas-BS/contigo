@@ -1,354 +1,317 @@
-'use client';
-
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ArrowRight, BarChart3, Users, Brain, Smile } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { buttonStyles, StatusTag } from '@/components/ui';
+import { cx } from '@/components/ui/cx';
+import { MOCK_ATTENDANCE_BY_DAY, MOCK_MOOD_DATA, MOCK_SEATS, MOCK_STUDENTS } from '@/lib/services/mockData';
+import { TIGO_PROMPTS, tigoReply } from '@/lib/services/tigo';
+import { getAttentionReasons, getInitials, mean, round, seatScoreClass } from '@/lib/utils';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
+const REPO_URL = 'https://github.com/Anas-BS/contigo';
+
+const attention = MOCK_STUDENTS.map((s) => ({ ...s, reasons: getAttentionReasons(s) }))
+  .filter((s) => s.reasons.length > 0)
+  .sort((a, b) => b.reasons.length - a.reasons.length);
+const classAvg = round(mean(MOCK_STUDENTS.map((s) => s.grade)));
+const classAttendance = round(mean(MOCK_STUDENTS.map((s) => s.attendance ?? 0)));
+
+const READERS = [
+  {
+    who: 'Students',
+    sees: 'Their own progress toward a level, the skill that needs practice next, and what is coming up this week.',
+    never: 'Never a leaderboard or a classmate’s score.',
+    href: '/login?next=/student/dashboard',
+    cta: 'See the student view',
   },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.8,
-      ease: 'easeOut',
-    },
+  {
+    who: 'Teachers',
+    sees: 'Which students need a conversation and why, attendance, the class trend, and a roster that sorts the way they think.',
+    never: 'Never a flag without a reason beside it.',
+    href: '/login?next=/teacher/dashboard',
+    cta: 'See the teacher view',
   },
-};
-
-const floatingVariants = {
-  initial: { y: 0 },
-  animate: {
-    y: [-10, 10, -10],
-    transition: {
-      duration: 4,
-      repeat: Infinity,
-      ease: 'easeInOut',
-    },
+  {
+    who: 'School leaders',
+    sees: 'How grades compare with the school average, where attendance dips during the week, and which alerts are open.',
+    never: 'Never individual check-ins or private notes.',
+    href: '/login?next=/admin/dashboard',
+    cta: 'See the school view',
   },
-};
+];
 
-const featureCardVariants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      duration: 0.6,
-      ease: 'easeOut',
-    },
-  },
-};
+const PRINCIPLES = [
+  ['Reasons, not risk scores', 'Every flag names the signal behind it: a grade under 60, attendance under 85%, a low check-in, a falling trend.'],
+  ['Progress, not rank', 'Students compare themselves with their own goal. Nothing in their view is ordered against other students.'],
+  ['Decisions, not decoration', 'Each chart answers one question and says what it found in a sentence underneath.'],
+  ['Honest by default', 'This preview uses fictional sample data. Contigo will not show a number it cannot source.'],
+];
 
-const featureCardHover = {
-  scale: 1.05,
-  boxShadow: '0px 20px 40px rgba(249, 123, 79, 0.2)',
-  transition: {
-    type: 'spring',
-    stiffness: 400,
-    damping: 10,
-  },
-};
-
-export default function LandingPage() {
-  const features = [
-    {
-      icon: BarChart3,
-      title: 'Holistic Analytics',
-      description: 'Track every variable that matters: grades, mood, seating, and wellbeing.',
-    },
-    {
-      icon: Users,
-      title: 'Seating Intelligence',
-      description: 'Interactive classroom heatmaps reveal how position impacts performance.',
-    },
-    {
-      icon: Brain,
-      title: 'Smart Insights via Tigo',
-      description: 'Personalised recommendations that turn raw data into clear next steps.',
-    },
-    {
-      icon: Smile,
-      title: 'Wellbeing Check-ins',
-      description: 'Monitor student mood and emotional health alongside academic progress.',
-    },
-  ];
-
+function SectionHead({ index, eyebrow, title, id }: { index: string; eyebrow: string; title: string; id: string }) {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden">
-      {/* Animated Background Blobs */}
-      <div className="fixed inset-0 pointer-events-none">
-        <motion.div
-          className="absolute top-20 left-10 w-72 h-72 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
-          animate={{
-            x: [0, 50, -50, 0],
-            y: [0, 100, -100, 0],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-        <motion.div
-          className="absolute top-40 right-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
-          animate={{
-            x: [0, -50, 50, 0],
-            y: [0, -100, 100, 0],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 left-1/2 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"
-          animate={{
-            x: [0, 100, -100, 0],
-            y: [0, 50, -50, 0],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
+    <div className="grid gap-3 border-t border-ink pt-4 md:grid-cols-12 md:gap-8">
+      <p className="label md:col-span-3">
+        <span className="num text-ember-700">{index}</span> · {eyebrow}
+      </p>
+      <h2 id={id} className="font-display text-[2rem] leading-[2.4rem] text-ink md:col-span-9 md:text-[2.75rem] md:leading-[3.1rem]">
+        {title}
+      </h2>
+    </div>
+  );
+}
+
+function AttentionPreview() {
+  return (
+    <figure className="relative">
+      <div className="overflow-hidden rounded-lg border border-line-strong bg-paper-raised shadow-overlay">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+          <div>
+            <p className="label">Grade 5B · English</p>
+            <p className="mt-0.5 text-sm font-medium text-ink">Needs attention this week</p>
+          </div>
+          <StatusTag tone="critical">{attention.length} students</StatusTag>
+        </div>
+        <dl className="grid grid-cols-3 divide-x divide-line border-b border-line">
+          {[
+            ['Class average', `${classAvg}%`],
+            ['Attendance', `${classAttendance}%`],
+            ['Check-ins', '6 of 6'],
+          ].map(([k, v]) => (
+            <div key={k} className="px-5 py-3">
+              <dt className="label">{k}</dt>
+              <dd className="num mt-1 font-display text-2xl text-ink">{v}</dd>
+            </div>
+          ))}
+        </dl>
+        <ul className="divide-y divide-line">
+          {attention.map((s) => (
+            <li key={s.id} className="flex items-start gap-3 px-5 py-3.5">
+              <span aria-hidden="true" className="num grid h-8 w-8 shrink-0 place-items-center rounded-full bg-paper-sunken text-xs font-medium text-ink-700">
+                {getInitials(s.name)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-sm font-medium text-ink">{s.name}</p>
+                  <p className="num text-sm text-ink-600">{s.grade}%</p>
+                </div>
+                <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                  {s.reasons.map((r) => (
+                    <li key={r}>
+                      <StatusTag tone={r.startsWith('Grade ') ? 'critical' : 'caution'}>{r}</StatusTag>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="flex items-center justify-between border-t border-line bg-paper px-5 py-3 text-[13px]">
+          <span className="text-ink-600">Suggested: schedule a check-in with Fatima</span>
+          <span className="font-medium text-ink">Add note</span>
+        </div>
       </div>
+      <figcaption className="mt-3 text-[13px] text-ink-500">Teacher overview, as it appears in the demo. Sample data.</figcaption>
+    </figure>
+  );
+}
 
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Navigation */}
-        <motion.nav
-          className="backdrop-blur-md bg-white/10 border border-white/20 sticky top-0 z-40"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Logo size={128} />
-            <motion.div
-              className="hidden md:flex gap-6 text-sm text-white/70"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Link href="/student/dashboard" className="hover:text-orange-400 transition-colors">
-                Demo
-              </Link>
-              <Link href="/login" className="hover:text-orange-400 transition-colors">
-                Sign In
-              </Link>
-            </motion.div>
+function SeatGrid() {
+  const rows = [1, 2, 3];
+  return (
+    <div aria-hidden="true" className="space-y-1.5">
+      <div className="mb-3 border-b border-dashed border-line-strong pb-1 text-center text-2xs uppercase tracking-[0.14em] text-ink-500">Front of room</div>
+      {rows.map((r) => (
+        <div key={r} className="grid grid-cols-6 gap-1.5">
+          {MOCK_SEATS.filter((s) => s.row === r).map((s) => (
+            <div key={s.id} className={cx('num grid h-11 place-items-center rounded-sm text-[11px] font-medium', seatScoreClass(s.score))}>
+              {s.score}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MoodStrip() {
+  return (
+    <div aria-hidden="true" className="flex h-28 items-end gap-2">
+      {MOCK_MOOD_DATA.map((m) => (
+        <div key={m.date} className="flex flex-1 flex-col items-center gap-1.5">
+          <span className="num text-[11px] text-ink-600">{m.mood}</span>
+          <div className={cx('w-full rounded-t-sm', (m.mood ?? 0) <= 5 ? 'bg-ember-500' : 'bg-ink-700')} style={{ height: `${(m.mood ?? 0) * 7}px` }} />
+          <span className="text-2xs text-ink-500">{m.date}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AttendanceRows() {
+  const low = Math.min(...MOCK_ATTENDANCE_BY_DAY.map((d) => d.rate));
+  return (
+    <div aria-hidden="true" className="divide-y divide-line">
+      {MOCK_ATTENDANCE_BY_DAY.map((d) => (
+        <div key={d.day} className="flex items-center gap-3 py-2">
+          <span className="w-8 text-[13px] text-ink-600">{d.day}</span>
+          <div className="h-1.5 flex-1 rounded-full bg-paper-sunken">
+            <div className={cx('h-full rounded-full', d.rate === low ? 'bg-ember-600' : 'bg-ink-700')} style={{ width: `${((d.rate - 80) / 20) * 100}%` }} />
           </div>
-        </motion.nav>
+          <span className={cx('num w-10 text-right text-[13px]', d.rate === low ? 'font-medium text-ember-700' : 'text-ink')}>{d.rate}%</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-        {/* Hero Section */}
-        <motion.div
-          className="max-w-6xl mx-auto px-6 py-20 md:py-32 text-center space-y-8"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {/* Main Heading */}
-          <motion.div className="space-y-4" variants={itemVariants}>
-            <motion.div
-              className="inline-block"
-              variants={floatingVariants}
-              initial="initial"
-              animate="animate"
-            >
-              <span className="inline-block px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-orange-300 text-sm font-medium">
-                ✨ The Future of ELT Analytics
-              </span>
-            </motion.div>
+function TigoExchange() {
+  const q = TIGO_PROMPTS.teacher[0];
+  return (
+    <div aria-hidden="true" className="space-y-3 text-sm">
+      <p className="ml-auto w-fit max-w-[85%] rounded-md bg-ink px-3 py-2 text-paper">{q}</p>
+      <p className="max-w-[92%] rounded-md border border-line bg-paper px-3 py-2 leading-6 text-ink">{tigoReply('teacher', q)}</p>
+    </div>
+  );
+}
 
-            <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight">
-              <span className="bg-gradient-to-r from-orange-400 via-orange-300 to-orange-500 bg-clip-text text-transparent">
-                With You,
-              </span>
-              <br />
-              <span className="text-white">Every Step</span>
-            </h1>
+const CAPABILITIES = [
+  {
+    title: 'A seating plan that shows the room',
+    body: 'Each seat takes the colour of the signal you choose: grades, participation, speaking anxiety. Patterns by row or corner become visible in seconds, and every seat opens the student’s record.',
+    artifact: <SeatGrid />,
+  },
+  {
+    title: 'Check-ins that stay with the student',
+    body: 'A ten-second daily check-in, private to the student and their teacher. Low days are visible to the people who can help, never to classmates or the wider school.',
+    artifact: <MoodStrip />,
+  },
+  {
+    title: 'Attendance with its pattern, not just its total',
+    body: 'Teachers take the register on the seating plan. Leaders see where in the week attendance slips, which a single term percentage hides.',
+    artifact: <AttendanceRows />,
+  },
+  {
+    title: 'An assistant that reads the same page you do',
+    body: 'Tigo answers from the data on screen and says so when it does not know. It is a shortcut to an answer, not a second opinion.',
+    artifact: <TigoExchange />,
+  },
+];
 
-            <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto leading-relaxed">
-              Contigo is a holistic English Language Teaching platform that tracks every variable that matters: grades, mood, seating, and wellbeing. The result is a clear picture of what truly drives learning outcomes.
-            </p>
-          </motion.div>
-
-          {/* CTA Buttons */}
-          <motion.div
-            className="flex flex-col sm:flex-row justify-center gap-4 pt-4"
-            variants={itemVariants}
-          >
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg hover:shadow-orange-500/50 transition-all backdrop-blur-md"
-              >
-                Get Started
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </motion.div>
-
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                href="/student/dashboard"
-                className="inline-flex items-center gap-2 backdrop-blur-md bg-white/10 border border-white/20 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/20 transition-all"
-              >
-                View Demo
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-
-        {/* Features Grid */}
-        <motion.div
-          className="max-w-6xl mx-auto px-6 py-20 space-y-8"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div className="text-center space-y-2" variants={itemVariants}>
-            <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Powerful Features
-            </h2>
-            <p className="text-white/60 text-lg">
-              Everything you need to understand and improve student performance
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={index}
-                  className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl p-8 hover:border-orange-400/50 transition-colors group"
-                  variants={featureCardVariants}
-                  whileHover={featureCardHover}
-                >
-                  <motion.div
-                    className="inline-block p-3 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-600/20 mb-4 group-hover:bg-gradient-to-br group-hover:from-orange-500/40 group-hover:to-orange-600/40 transition-all"
-                    whileHover={{ rotate: 10, scale: 1.1 }}
-                  >
-                    <Icon className="w-6 h-6 text-orange-400" />
-                  </motion.div>
-
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-white/60">{feature.description}</p>
-                </motion.div>
-              );
-            })}
+export default function Home() {
+  return (
+    <div className="bg-paper">
+      <header className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur-sm">
+        <nav aria-label="Main" className="mx-auto flex h-16 max-w-page items-center justify-between gap-6 px-5 md:px-8">
+          <Logo href="/" />
+          <ul className="hidden items-center gap-8 text-sm text-ink-700 md:flex">
+            <li><a href="#product" className="transition-colors hover:text-ink">Product</a></li>
+            <li><a href="#roles" className="transition-colors hover:text-ink">Who it serves</a></li>
+            <li><a href="#principles" className="transition-colors hover:text-ink">Principles</a></li>
+          </ul>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className={buttonStyles({ variant: 'ghost', size: 'sm', className: 'hidden sm:inline-flex' })}>Sign in</Link>
+            <Link href="/login" className={buttonStyles({ size: 'sm' })}>Open the demo</Link>
           </div>
-        </motion.div>
+        </nav>
+      </header>
 
-        {/* Dashboard Preview Section */}
-        <motion.div
-          className="max-w-6xl mx-auto px-6 py-20 space-y-8"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div className="text-center space-y-2" variants={itemVariants}>
-            <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Three Powerful Dashboards
-            </h2>
-            <p className="text-white/60 text-lg">
-              Tailored views for students, teachers, and administrators
-            </p>
-          </motion.div>
+      <main id="main">
+        <section aria-labelledby="hero-title" className="mx-auto max-w-page px-5 pb-20 pt-12 md:px-8 md:pb-28 md:pt-20">
+          <div className="grid items-start gap-12 lg:grid-cols-12 lg:gap-10">
+            <div className="lg:col-span-6 lg:pt-6">
+              <p className="label">Student performance intelligence</p>
+              <h1 id="hero-title" className="mt-4 font-display text-[2.75rem] leading-[3rem] tracking-[-0.01em] text-ink md:text-[4rem] md:leading-[4.25rem]">
+                Know which student needs you <em className="text-ember-700">before</em> the report card does.
+              </h1>
+              <p className="mt-6 max-w-[34rem] text-[17px] leading-7 text-ink-700">
+                Contigo brings grades, attendance and daily check-ins into one record, then tells each teacher, student and school leader the part that matters to them, with the reason attached.
+              </p>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link href="/login" className={buttonStyles({ size: 'lg' })}>Open the demo</Link>
+                <a href="#product" className={buttonStyles({ variant: 'secondary', size: 'lg' })}>See how it works</a>
+              </div>
+              <p className="mt-5 text-[13px] text-ink-500">Working preview with fictional sample data. No sign-up required.</p>
+            </div>
+            <div className="lg:col-span-6">
+              <AttentionPreview />
+            </div>
+          </div>
+        </section>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                title: 'Student Dashboard',
-                description: 'Track your journey with skill analytics and mood insights',
-                href: '/student/dashboard',
-                gradient: 'from-blue-500/20 to-blue-600/20',
-              },
-              {
-                title: 'Teacher Dashboard',
-                description: 'Monitor class performance and identify at-risk students',
-                href: '/teacher/dashboard',
-                gradient: 'from-purple-500/20 to-purple-600/20',
-              },
-              {
-                title: 'Classroom Seating Map',
-                description: 'Interactive heatmaps reveal seating impact on performance',
-                href: '/teacher/classroom',
-                gradient: 'from-orange-500/20 to-orange-600/20',
-              },
-            ].map((dashboard, index) => (
-              <motion.div
-                key={index}
-                className={`backdrop-blur-md bg-gradient-to-br ${dashboard.gradient} border border-white/20 rounded-2xl p-8 hover:border-white/40 transition-all cursor-pointer group`}
-                variants={featureCardVariants}
-                whileHover={featureCardHover}
-              >
-                <Link href={dashboard.href} className="block space-y-4">
-                  <h3 className="text-xl font-semibold text-white group-hover:text-orange-400 transition-colors">
-                    {dashboard.title}
-                  </h3>
-                  <p className="text-white/60">{dashboard.description}</p>
-                  <motion.div
-                    className="inline-flex items-center gap-2 text-orange-400 font-medium"
-                    whileHover={{ x: 5 }}
-                  >
-                    Explore
-                    <ArrowRight className="w-4 h-4" />
-                  </motion.div>
-                </Link>
-              </motion.div>
+        <section id="roles" aria-labelledby="roles-title" className="mx-auto max-w-page scroll-mt-20 px-5 pb-20 md:px-8 md:pb-28">
+          <SectionHead index="01" eyebrow="Who it serves" title="One record, three readers. Each sees only what helps them act." id="roles-title" />
+          <div className="mt-10 grid gap-10 md:grid-cols-3 md:gap-0 md:divide-x md:divide-line">
+            {READERS.map((r, i) => (
+              <article key={r.who} className={cx('flex flex-col', i > 0 && 'md:pl-8', i < 2 && 'md:pr-8')}>
+                <h3 className="font-display text-[1.6rem] leading-8 text-ink">{r.who}</h3>
+                <p className="mt-3 text-[15px] leading-6 text-ink-700">{r.sees}</p>
+                <p className="mt-3 text-[15px] leading-6 text-ink-500">{r.never}</p>
+                <Link href={r.href} className="link mt-5 text-sm font-medium">{r.cta}<span aria-hidden="true"> →</span></Link>
+              </article>
             ))}
           </div>
-        </motion.div>
+        </section>
 
-        {/* Footer CTA */}
-        <motion.div
-          className="max-w-4xl mx-auto px-6 py-20 text-center space-y-6"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <motion.div
-            className="backdrop-blur-md bg-gradient-to-r from-orange-500/20 to-purple-500/20 border border-white/20 rounded-2xl p-12 space-y-6"
-            variants={itemVariants}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-white">
-              Ready to Transform Your ELT Experience?
+        <section id="product" aria-labelledby="product-title" className="mx-auto max-w-page scroll-mt-20 px-5 pb-20 md:px-8 md:pb-28">
+          <SectionHead index="02" eyebrow="The product" title="Built around the questions teachers already ask on a Monday morning." id="product-title" />
+          <ol className="mt-10 divide-y divide-line border-y border-line">
+            {CAPABILITIES.map((c, i) => (
+              <li key={c.title} className="grid gap-6 py-10 md:grid-cols-12 md:gap-8">
+                <p className="num font-display text-[1.75rem] leading-none text-ember-600 md:col-span-1">{String(i + 1).padStart(2, '0')}</p>
+                <div className="md:col-span-5">
+                  <h3 className="font-display text-[1.6rem] leading-8 text-ink">{c.title}</h3>
+                  <p className="mt-3 max-w-[30rem] text-[15px] leading-6 text-ink-700">{c.body}</p>
+                </div>
+                <div className="rounded-md border border-line bg-paper-raised p-5 md:col-span-6 lg:col-span-5 lg:col-start-8">{c.artifact}</div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="principles" aria-labelledby="principles-title" className="scroll-mt-16 bg-ink text-paper">
+          <div className="mx-auto max-w-page px-5 py-20 md:px-8 md:py-24">
+            <div className="grid gap-3 border-t border-paper/30 pt-4 md:grid-cols-12 md:gap-8">
+              <p className="label text-paper/70 md:col-span-3"><span className="num text-ember-300">03</span> · Principles</p>
+              <h2 id="principles-title" className="font-display text-paper text-[2rem] leading-[2.4rem] md:col-span-9 md:text-[2.75rem] md:leading-[3.1rem]">
+                Data about children deserves restraint.
+              </h2>
+            </div>
+            <dl className="mt-12 grid gap-x-12 gap-y-10 md:grid-cols-2 lg:ml-[25%]">
+              {PRINCIPLES.map(([t, d]) => (
+                <div key={t} className="border-t border-paper/20 pt-4">
+                  <dt className="text-[17px] font-medium">{t}</dt>
+                  <dd className="mt-2 text-[15px] leading-6 text-paper/75">{d}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        <section aria-labelledby="cta-title" className="mx-auto max-w-page px-5 py-20 md:px-8 md:py-28">
+          <div className="grid items-end gap-8 md:grid-cols-12">
+            <h2 id="cta-title" className="font-display text-[2.25rem] leading-[2.6rem] text-ink md:col-span-8 md:text-[3.25rem] md:leading-[3.6rem]">
+              Walk through a school week as a student, a teacher or a school leader.
             </h2>
-            <p className="text-white/70 text-lg">
-              Join educators and students who are discovering what truly drives learning outcomes.
-            </p>
+            <div className="flex flex-wrap gap-3 md:col-span-4 md:justify-end">
+              <Link href="/login" className={buttonStyles({ size: 'lg' })}>Open the demo</Link>
+            </div>
+          </div>
+        </section>
+      </main>
 
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg hover:shadow-orange-500/50 transition-all"
-              >
-                Start Your Journey
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      </div>
-    </main>
+      <footer className="border-t border-line">
+        <div className="mx-auto grid max-w-page gap-8 px-5 py-10 text-[13px] text-ink-600 md:grid-cols-12 md:px-8">
+          <div className="md:col-span-4">
+            <Logo href="/" size="sm" />
+            <p className="mt-3 italic text-ink-500">With you, every step.</p>
+          </div>
+          <p className="leading-5 md:col-span-5">
+            Contigo is in active development. This preview runs entirely in your browser with fictional students and teachers; no real school data is used or stored.
+          </p>
+          <ul className="space-y-2 md:col-span-3 md:text-right">
+            <li><Link href="/login" className="hover:text-ink">Sign in</Link></li>
+            <li><a href={REPO_URL} className="hover:text-ink" rel="noopener noreferrer">Source on GitHub</a></li>
+          </ul>
+        </div>
+      </footer>
+    </div>
   );
 }

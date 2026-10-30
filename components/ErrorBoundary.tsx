@@ -32,22 +32,26 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (this.props.fallback) return this.props.fallback(error, this.reset);
 
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6">
-        <div className="max-w-md w-full backdrop-blur-md bg-white/5 border border-orange-400/30 rounded-2xl p-8 text-center space-y-4">
-          <div className="text-5xl">🛟</div>
-          <h2 className="text-2xl font-bold text-white">Something went sideways</h2>
-          <p className="text-white/70 text-sm">
-            Tigo hit an unexpected error. The team has been notified. You can try reloading this view.
+      <div role="alert" className="flex min-h-screen items-center justify-center bg-paper px-5">
+        <div className="w-full max-w-md">
+          <p className="label">Something went wrong</p>
+          <h1 className="mt-2 font-display text-[2rem] leading-10 text-ink">This view could not load</h1>
+          <p className="mt-2 text-[15px] leading-6 text-ink-600">
+            An unexpected error stopped the page from rendering. Your data has not changed. Try again, or go back to the start.
           </p>
-          <pre className="text-xs text-white/40 bg-black/30 rounded-lg p-3 overflow-auto text-left">
-            {error.message}
-          </pre>
-          <button
-            onClick={this.reset}
-            className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-shadow"
-          >
-            Try again
-          </button>
+          <pre className="mt-5 overflow-auto rounded border border-line bg-paper-sunken p-3 font-mono text-xs text-ink-700">{error.message}</pre>
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              onClick={this.reset}
+              className="inline-flex h-10 items-center rounded bg-ink px-4 text-sm font-medium text-paper transition-colors hover:bg-ink-800"
+            >
+              Try again
+            </button>
+            <a href="/" className="inline-flex h-10 items-center px-2 text-sm font-medium text-ember-700 underline underline-offset-4">
+              Go to the start
+            </a>
+          </div>
         </div>
       </div>
     );
