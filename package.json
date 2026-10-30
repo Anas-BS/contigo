@@ -12,12 +12,10 @@
     "test:ci": "jest --ci"
   },
   "dependencies": {
-    "framer-motion": "^11.2.12",
     "lucide-react": "^0.395.0",
     "next": "15.5.13",
     "react": "^18",
-    "react-dom": "^18",
-    "recharts": "^2.12.7"
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",

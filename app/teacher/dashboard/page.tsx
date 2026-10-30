@@ -1,107 +1,127 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import PerformanceBarChart from '@/components/charts/PerformanceBarChart';
-import TigoChat from '@/components/TigoChat';
-import Logo from '@/components/Logo';
-import {
-  Search,
-  UserPlus,
-  MessageSquare,
-  X,
-  BookOpen,
-  Users,
-  AlertTriangle,
-  Smile,
-  CheckCircle2,
-} from 'lucide-react';
-import { MOCK_STUDENTS } from '@/lib/services/mockData';
+import { ArrowDown, ArrowUp, ArrowRight, Minus, Plus, Search } from 'lucide-react';
+import { Button, Dialog, Field, Input, MetricStrip, PageHeader, Panel, Select, StatusTag, buttonStyles, controlStyles } from '@/components/ui';
+import { cx } from '@/components/ui/cx';
+import { LineTrend } from '@/components/charts/LineTrend';
+import { Meter } from '@/components/charts/Meter';
+import { MOCK_PERFORMANCE_DATA, MOCK_STUDENTS } from '@/lib/services/mockData';
 import { GRADE_THRESHOLDS } from '@/lib/constants';
 import { useDebounce } from '@/lib/hooks';
-import { getTrendEmoji, getTrendColorClass, clamp } from '@/lib/utils';
-import type { Student, CEFRLevel } from '@/lib/types';
+import { ATTENTION_RULES, clamp, getAttentionReasons, getTrendLabel, mean, round, scoreTone } from '@/lib/utils';
+import type { CEFRLevel, Student, TrendDirection } from '@/lib/types';
 
-type TeacherStudent = Student & { notes: string[] };
+interface Note {
+  text: string;
+  at: string;
+}
+type TeacherStudent = Student & { notes: Note[] };
+type SortKey = 'name' | 'grade' | 'attendance' | 'mood';
 
 const INITIAL_STUDENTS: TeacherStudent[] = MOCK_STUDENTS.map((s) => ({ ...s, notes: [] }));
-
 const NAME_PATTERN = /^[A-Za-zÀ-ÿ' -]+$/;
 const CEFR_OPTIONS: CEFRLevel[] = ['A1', 'A2', 'B1', 'B1+', 'B2', 'C1', 'C2'];
+const TREND = MOCK_PERFORMANCE_DATA.map((d) => ({ label: d.name ?? '', value: d.score ?? 0 }));
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
-};
+function TrendCell({ trend }: { trend: TrendDirection }) {
+  const Icon = trend === 'up' ? ArrowUp : trend === 'down' ? ArrowDown : Minus;
+  return (
+    <span className={cx('inline-flex items-center gap-1 text-[13px]', trend === 'up' ? 'text-positive' : trend === 'down' ? 'text-critical' : 'text-ink-500')}>
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      {getTrendLabel(trend)}
+    </span>
+  );
+}
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' as const } },
-};
+function GradeCell({ grade }: { grade: number }) {
+  const tone = scoreTone(grade);
+  return (
+    <span className="inline-flex items-center gap-2.5">
+      <span className={cx('num w-9 text-right font-medium', tone === 'critical' ? 'text-critical' : 'text-ink')}>{grade}%</span>
+      <Meter value={grade} tone={tone === 'critical' ? 'critical' : 'ink'} className="hidden xl:block" />
+    </span>
+  );
+}
 
 export default function TeacherDashboard() {
   const [students, setStudents] = useState<TeacherStudent[]>(INITIAL_STUDENTS);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 200);
+  const [levelFilter, setLevelFilter] = useState<'all' | CEFRLevel>('all');
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
   const [showAdd, setShowAdd] = useState(false);
-  const [newStudent, setNewStudent] = useState<{ name: string; level: CEFRLevel; grade: string }>({
-    name: '',
-    level: 'B1',
-    grade: '70',
-  });
-  const [formError, setFormError] = useState('');
+  const [newStudent, setNewStudent] = useState<{ name: string; level: CEFRLevel; grade: string }>({ name: '', level: 'B1', grade: '70' });
+  const [formErrors, setFormErrors] = useState<{ name?: string; grade?: string }>({});
+  const [announcement, setAnnouncement] = useState('');
   const [activeStudent, setActiveStudent] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
+  const nameRef = useRef<HTMLInputElement>(null);
 
-  const filtered = useMemo(
-    () =>
-      students.filter((s) =>
-        s.name.toLowerCase().includes(debouncedSearch.toLowerCase())
-      ),
-    [students, debouncedSearch]
-  );
+  useEffect(() => {
+    if (showAdd) nameRef.current?.focus();
+  }, [showAdd]);
+
+  useEffect(() => {
+    if (!announcement) return;
+    const t = setTimeout(() => setAnnouncement(''), 5000);
+    return () => clearTimeout(t);
+  }, [announcement]);
 
   const stats = useMemo(() => {
-    const len = Math.max(students.length, 1);
-    const avg = students.reduce((s, x) => s + x.grade, 0) / len;
-    const atRisk = students.filter((x) => x.grade < GRADE_THRESHOLDS.atRisk).length;
-    const avgMood = students.reduce((s, x) => s + x.mood, 0) / len;
+    const flagged = students.filter((s) => getAttentionReasons(s).length > 0);
     return {
       total: students.length,
-      classAvg: avg.toFixed(0),
-      atRisk,
-      avgMood: avgMood.toFixed(1),
+      classAvg: round(mean(students.map((s) => s.grade))),
+      attendance: round(mean(students.filter((s) => s.attendance !== undefined).map((s) => s.attendance as number))),
+      avgMood: round(mean(students.map((s) => s.mood)), 1),
+      flagged,
     };
   }, [students]);
 
-  const validateNewStudent = (): string => {
+  const trendDelta = TREND[TREND.length - 1].value - TREND[0].value;
+
+  const filtered = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    const rows = students.filter((s) => (!q || s.name.toLowerCase().includes(q)) && (levelFilter === 'all' || s.level === levelFilter));
+    const dir = sort.dir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      if (sort.key === 'name') return a.name.localeCompare(b.name) * dir;
+      return (((a[sort.key] ?? 0) as number) - ((b[sort.key] ?? 0) as number)) * dir;
+    });
+  }, [students, debouncedSearch, levelFilter, sort]);
+
+  const followUps = useMemo(
+    () => students.flatMap((s) => s.notes.map((n) => ({ ...n, student: s.name, id: s.id }))).slice(0, 5),
+    [students]
+  );
+
+  const validateNewStudent = () => {
+    const errors: { name?: string; grade?: string } = {};
     const name = newStudent.name.trim();
-    if (!name) return 'Name is required.';
-    if (!NAME_PATTERN.test(name))
-      return 'Name can only contain letters, spaces, hyphens, and apostrophes.';
+    if (!name) errors.name = 'Enter the student’s full name.';
+    else if (!NAME_PATTERN.test(name)) errors.name = 'Use letters, spaces, hyphens and apostrophes only.';
     const grade = Number(newStudent.grade);
-    if (!Number.isInteger(grade)) return 'Grade must be a whole number.';
-    if (grade < 0 || grade > 100) return 'Grade must be between 0 and 100.';
-    return '';
+    if (newStudent.grade.trim() === '' || !Number.isInteger(grade)) errors.grade = 'Enter a whole number.';
+    else if (grade < 0 || grade > 100) errors.grade = 'Enter a value from 0 to 100.';
+    return errors;
   };
 
-  const addStudent = () => {
-    const error = validateNewStudent();
-    if (error) {
-      setFormError(error);
-      return;
-    }
-    setFormError('');
-    const grade = clamp(parseInt(newStudent.grade, 10), 0, 100);
+  const addStudent = (e: FormEvent) => {
+    e.preventDefault();
+    const errors = validateNewStudent();
+    setFormErrors(errors);
+    if (Object.keys(errors).length) return;
+    const name = newStudent.name.trim();
     setStudents((prev) => [
       ...prev,
       {
         id: String(Date.now()),
-        name: newStudent.name.trim(),
-        email: `${newStudent.name.trim().toLowerCase().replace(/\s+/g, '.')}@example.com`,
+        name,
+        email: `${name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
         role: 'student',
-        grade,
+        grade: clamp(parseInt(newStudent.grade, 10), 0, 100),
         mood: 7,
         trend: 'stable',
         level: newStudent.level,
@@ -110,372 +130,316 @@ export default function TeacherDashboard() {
     ]);
     setNewStudent({ name: '', level: 'B1', grade: '70' });
     setShowAdd(false);
+    setAnnouncement(`${name} was added to the roster.`);
   };
 
-  const addNote = () => {
+  const addNote = (e: FormEvent) => {
+    e.preventDefault();
     const text = noteDraft.trim();
     if (!text || activeStudent === null) return;
-    setStudents((prev) =>
-      prev.map((s) => (s.id === activeStudent ? { ...s, notes: [text, ...s.notes] } : s))
-    );
+    const at = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    setStudents((prev) => prev.map((s) => (s.id === activeStudent ? { ...s, notes: [{ text, at }, ...s.notes] } : s)));
     setNoteDraft('');
   };
 
+  const openNotes = (id: string) => {
+    setActiveStudent(id);
+    setNoteDraft('');
+  };
+
+  const toggleSort = (key: SortKey) =>
+    setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'name' ? 'asc' : 'desc' }));
+
   const active = students.find((s) => s.id === activeStudent) ?? null;
 
-  const KPIS = [
-    { label: 'Class Average', value: `${stats.classAvg}%`, icon: BookOpen, color: 'from-blue-500/20 to-blue-600/20', border: 'border-blue-400/30' },
-    { label: 'Total Students', value: `${stats.total}`, icon: Users, color: 'from-purple-500/20 to-purple-600/20', border: 'border-purple-400/30' },
-    { label: 'At Risk', value: `${stats.atRisk}`, icon: AlertTriangle, color: 'from-red-500/20 to-red-600/20', border: 'border-red-400/30' },
-    { label: 'Average Mood', value: `${stats.avgMood}/10`, icon: Smile, color: 'from-orange-500/20 to-orange-600/20', border: 'border-orange-400/30' },
-  ];
+  const SortHeader = ({ k, children, align = 'left' }: { k: SortKey; children: string; align?: 'left' | 'right' }) => (
+    <th scope="col" aria-sort={sort.key === k ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'} className={cx('px-3 py-2.5 font-normal', align === 'right' && 'text-right')}>
+      <button
+        type="button"
+        onClick={() => toggleSort(k)}
+        className={cx('label inline-flex items-center gap-1 rounded-sm hover:text-ink', sort.key === k && 'text-ink')}
+      >
+        {children}
+        {sort.key === k ? (sort.dir === 'asc' ? <ArrowUp className="h-3 w-3" aria-hidden="true" /> : <ArrowDown className="h-3 w-3" aria-hidden="true" />) : null}
+      </button>
+    </th>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="fixed inset-0 pointer-events-none">
-        <motion.div
-          className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"
-          animate={{ x: [0, 50, -50, 0], y: [0, 100, -100, 0] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"
-          animate={{ x: [0, -60, 60, 0], y: [0, -80, 80, 0] }}
-          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Grade 5B · English · Term 2, week 11"
+        title="Class overview"
+        description={`${stats.total} students. Start with the students flagged below, then work through the roster.`}
+        actions={
+          <>
+            <Link href="/teacher/classroom" className={buttonStyles({ variant: 'secondary' })}>
+              Open classroom
+            </Link>
+            <Button onClick={() => { setShowAdd((v) => !v); setFormErrors({}); }} aria-expanded={showAdd} aria-controls="add-student">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add student
+            </Button>
+          </>
+        }
+      />
 
-      <div className="relative z-10">
-        <motion.nav
-          className="backdrop-blur-md bg-white/5 border-b border-white/10 sticky top-0 z-40"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Logo size={112} />
-            <div className="flex items-center gap-4">
-              <Link href="/teacher/classroom" className="text-sm text-white/70 hover:text-orange-400 transition-colors">
-                Classroom Map
-              </Link>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
-                T
-              </div>
-            </div>
-          </div>
-        </motion.nav>
+      <p role="status" aria-live="polite" className={cx('text-sm', announcement ? 'rounded border border-positive/30 bg-positive-soft px-4 py-2.5 text-positive' : 'sr-only')}>
+        {announcement}
+      </p>
 
-        <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <h1 className="text-4xl md:text-5xl font-bold text-white">Teacher Dashboard</h1>
-            <p className="text-white/60 text-lg mt-2">Grade 5B, English. {stats.total} students under your wing.</p>
-          </motion.div>
-
-          <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {KPIS.map((k) => {
-              const Icon = k.icon;
-              return (
-                <motion.div
-                  key={k.label}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.02, boxShadow: '0px 20px 40px rgba(249, 123, 79, 0.15)' }}
-                  className={`backdrop-blur-md bg-gradient-to-br ${k.color} border ${k.border} rounded-2xl p-6 transition-all`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <motion.div className="p-3 rounded-xl bg-white/10" whileHover={{ rotate: 10, scale: 1.1 }}>
-                      <Icon className="w-6 h-6 text-orange-400" />
-                    </motion.div>
-                  </div>
-                  <p className="text-white/70 text-sm mb-2">{k.label}</p>
-                  <p className="text-3xl font-bold text-white">{k.value}</p>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-
-          <motion.div
-            className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <h2 className="text-xl font-bold text-white mb-6">Class Average, Monthly Trend</h2>
-            <div className="bg-white/5 rounded-xl p-4">
-              <PerformanceBarChart color="#F97B4F" />
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="flex flex-col md:flex-row gap-3 items-stretch md:items-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-          >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search students by name"
-                className="w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-              />
-            </div>
-            <motion.button
-              onClick={() => {
-                setShowAdd((v) => !v);
-                setFormError('');
-              }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30"
-            >
-              <UserPlus className="w-4 h-4" />
-              Add Student
-            </motion.button>
-          </motion.div>
-
-          <AnimatePresence>
-            {showAdd && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="backdrop-blur-md bg-white/5 border border-white/20 rounded-2xl p-6 space-y-4">
-                  <div className="grid md:grid-cols-4 gap-3">
-                    <input
-                      type="text"
-                      value={newStudent.name}
-                      onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                      placeholder="Full name"
-                      className="bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                    />
-                    <select
-                      value={newStudent.level}
-                      onChange={(e) => setNewStudent({ ...newStudent, level: e.target.value as CEFRLevel })}
-                      aria-label="CEFR level"
-                      title="CEFR level"
-                      className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                    >
-                      {CEFR_OPTIONS.map((l) => (
-                        <option key={l} value={l} className="bg-slate-800">
-                          Level {l}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={newStudent.grade}
-                      onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
-                      placeholder="Grade %"
-                      className="bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                    />
-                    <button
-                      onClick={addStudent}
-                      className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-3 text-sm font-semibold transition-colors"
-                    >
-                      Save Student
-                    </button>
-                  </div>
-                  <AnimatePresence>
-                    {formError && (
-                      <motion.p
-                        key={formError}
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        role="alert"
-                        className="text-sm text-red-300 bg-red-500/10 border border-red-400/30 rounded-lg px-3 py-2"
-                      >
-                        {formError}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <motion.div
-            className="backdrop-blur-md bg-gradient-to-br from-white/10 to-white/5 border border-white/20 rounded-2xl p-6 md:p-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            <h2 className="text-xl font-bold text-white mb-6">Student Overview</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left border-b border-white/10">
-                    <th className="pb-3 text-white/60 font-medium">Student</th>
-                    <th className="pb-3 text-white/60 font-medium">Level</th>
-                    <th className="pb-3 text-white/60 font-medium">Grade</th>
-                    <th className="pb-3 text-white/60 font-medium">Mood</th>
-                    <th className="pb-3 text-white/60 font-medium">Trend</th>
-                    <th className="pb-3 text-white/60 font-medium text-right">Note</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <AnimatePresence>
-                    {filtered.map((s) => (
-                      <motion.tr
-                        key={s.id}
-                        layout
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="border-b border-white/5 hover:bg-white/5 transition-colors"
-                      >
-                        <td className="py-3 font-medium text-white">{s.name}</td>
-                        <td className="py-3">
-                          <span className="bg-blue-500/20 border border-blue-400/30 text-blue-300 px-2.5 py-0.5 rounded-full text-xs font-medium">
-                            {s.level}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          <span
-                            className={`font-semibold ${
-                              s.grade >= GRADE_THRESHOLDS.high
-                                ? 'text-green-400'
-                                : s.grade >= GRADE_THRESHOLDS.medium
-                                ? 'text-amber-300'
-                                : 'text-red-400'
-                            }`}
-                          >
-                            {s.grade}%
-                          </span>
-                        </td>
-                        <td className="py-3 text-white/80">{s.mood}/10</td>
-                        <td className={`py-3 text-lg ${getTrendColorClass(s.trend)}`}>
-                          {getTrendEmoji(s.trend)}
-                        </td>
-                        <td className="py-3 text-right">
-                          <button
-                            onClick={() => {
-                              setActiveStudent(s.id);
-                              setNoteDraft('');
-                            }}
-                            className="inline-flex items-center gap-1 text-xs text-orange-300 hover:text-orange-200 font-semibold"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            {s.notes.length > 0 ? `${s.notes.length} note${s.notes.length > 1 ? 's' : ''}` : 'Add note'}
-                          </button>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-              {filtered.length === 0 && (
-                <p className="text-center text-white/40 text-sm py-6">No students match that search.</p>
+      {showAdd && (
+        <Panel id="add-student" title="Add a student" description="They will appear in the roster straight away." className="animate-rise-in">
+          <form onSubmit={addStudent} noValidate className="grid gap-4 md:grid-cols-[2fr_1fr_1fr_auto] md:items-start">
+            <Field label="Full name" error={formErrors.name}>
+              {({ id, describedBy, invalid }) => (
+                <Input ref={nameRef} id={id} aria-describedby={describedBy} aria-invalid={invalid} autoComplete="off" value={newStudent.name} onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })} />
               )}
+            </Field>
+            <Field label="CEFR level">
+              {({ id }) => (
+                <Select id={id} value={newStudent.level} onChange={(e) => setNewStudent({ ...newStudent, level: e.target.value as CEFRLevel })}>
+                  {CEFR_OPTIONS.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Field label="Current grade (%)" error={formErrors.grade}>
+              {({ id, describedBy, invalid }) => (
+                <Input id={id} aria-describedby={describedBy} aria-invalid={invalid} inputMode="numeric" value={newStudent.grade} onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })} />
+              )}
+            </Field>
+            <div className="flex gap-2 md:pt-[26px]">
+              <Button type="submit">Save student</Button>
+              <Button variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
             </div>
-          </motion.div>
+          </form>
+        </Panel>
+      )}
 
-          <motion.div
-            className="backdrop-blur-md bg-gradient-to-r from-orange-500/20 to-purple-500/20 border border-orange-400/30 rounded-2xl p-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            whileHover={{ scale: 1.01 }}
-          >
-            <div className="flex items-start gap-4">
-              <motion.span
-                className="text-3xl"
-                animate={{ rotate: [0, 10, -10, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-                🤖
-              </motion.span>
-              <div className="flex-1">
-                <p className="font-semibold text-white text-lg mb-2">Tigo Insight</p>
-                <p className="text-white/80">
-                  {stats.atRisk > 0
-                    ? `${stats.atRisk} student${stats.atRisk > 1 ? 's are' : ' is'} below ${GRADE_THRESHOLDS.atRisk}%. A short one to one check in this week could lift their confidence and grade.`
-                    : 'No one is in the danger zone right now. Consider stretching your top performers with a creative speaking task.'}
-                </p>
-              </div>
-            </div>
-          </motion.div>
+      <MetricStrip
+        items={[
+          { label: 'Class average', value: stats.classAvg, unit: '%', context: `${trendDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(trendDelta)} points since ${TREND[0].label}` },
+          { label: 'Attendance', value: stats.attendance, unit: '%', context: 'Term to date' },
+          {
+            label: 'Need attention',
+            value: stats.flagged.length,
+            tone: stats.flagged.length ? 'critical' : 'default',
+            context: `of ${stats.total} students`,
+          },
+          { label: 'Average check-in', value: stats.avgMood, unit: '/10', context: 'Self-reported, last 7 days' },
+        ]}
+      />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <Panel
+          className="lg:col-span-7 lg:self-start"
+          title="Needs attention this week"
+          description={`Flagged when grade is under ${GRADE_THRESHOLDS.atRisk}%, attendance under ${ATTENTION_RULES.attendanceBelow}%, check-in at ${ATTENTION_RULES.moodAtOrBelow}/10 or lower, or grade is falling.`}
+          flush
+        >
+          {stats.flagged.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-ink-500">No one stands out this week.</p>
+          ) : (
+            <ul className="divide-y divide-line">
+              {stats.flagged.map((s) => {
+                const reasons = getAttentionReasons(s);
+                return (
+                  <li key={s.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-medium text-ink">
+                        {s.name} <span className="ml-1 text-[13px] font-normal text-ink-500">{s.level}</span>
+                      </p>
+                      <ul className="mt-1.5 flex flex-wrap gap-1.5" aria-label={`Reasons for ${s.name}`}>
+                        {reasons.map((r) => (
+                          <li key={r}>
+                            <StatusTag tone={r.startsWith('Grade') ? 'critical' : 'caution'}>{r}</StatusTag>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <Button variant="secondary" size="sm" onClick={() => openNotes(s.id)} className="self-start sm:self-center">
+                      {s.notes.length ? `Notes (${s.notes.length})` : 'Add note'}
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+
+        <div className="space-y-6 lg:col-span-5">
+          <Panel title="Class average" description={`Monthly, ${TREND[0].label} to ${TREND[TREND.length - 1].label}`}>
+            <LineTrend data={TREND} title="Class average by month" min={50} max={100} reference={{ value: GRADE_THRESHOLDS.atRisk, label: `At-risk line, ${GRADE_THRESHOLDS.atRisk}%` }} height={150} />
+          </Panel>
+          <Panel title="Follow-ups" description="Notes you add this session, newest first." flush>
+            {followUps.length === 0 ? (
+              <p className="px-5 py-5 text-sm text-ink-500">Notes you add to a student appear here, so follow-ups don’t get lost.</p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {followUps.map((n, i) => (
+                  <li key={i} className="px-5 py-3">
+                    <button type="button" onClick={() => openNotes(n.id)} className="w-full text-left">
+                      <span className="flex justify-between gap-4 text-[13px]">
+                        <span className="font-medium text-ink">{n.student}</span>
+                        <span className="num text-ink-500">{n.at}</span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-sm text-ink-600">{n.text}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
         </div>
       </div>
 
-      <AnimatePresence>
-        {active && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setActiveStudent(null)}
-          >
-            <motion.div
-              className="bg-slate-900 border border-white/20 rounded-2xl p-6 w-full max-w-md space-y-4"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs text-white/50 uppercase tracking-wide">Notes for</p>
-                  <h3 className="text-xl font-bold text-white">{active.name}</h3>
-                </div>
-                <button
-                  onClick={() => setActiveStudent(null)}
-                  aria-label="Close notes"
-                  title="Close"
-                  className="text-white/50 hover:text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={noteDraft}
-                  onChange={(e) => setNoteDraft(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addNote()}
-                  placeholder="Write a private note about this student"
-                  className="flex-1 bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange-400/50"
-                />
-                <button
-                  onClick={addNote}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 rounded-xl text-sm font-semibold transition-colors"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {active.notes.length === 0 ? (
-                  <p className="text-white/50 text-sm italic">No notes yet. Start with one observation.</p>
-                ) : (
-                  active.notes.map((n, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white/80"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span>{n}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Panel
+        id="roster"
+        title="Roster"
+        description={filtered.length === stats.total ? `${stats.total} students` : `Showing ${filtered.length} of ${stats.total} students`}
+        actions={
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <div className="relative min-w-0 flex-1 sm:w-56 sm:flex-none">
+              <label htmlFor="roster-search" className="sr-only">Search students by name</label>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" aria-hidden="true" />
+              <Input id="roster-search" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name" className="h-9 pl-9 text-sm" />
+            </div>
+            <div className="w-32">
+              <label htmlFor="roster-level" className="sr-only">Filter by level</label>
+              <Select id="roster-level" value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as 'all' | CEFRLevel)} className="h-9 text-sm">
+                <option value="all">All levels</option>
+                {CEFR_OPTIONS.map((l) => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        }
+        flush
+      >
+        {/* Table on medium screens and up */}
+        <div className="hidden md:block">
+          <table className="w-full text-sm">
+            <caption className="sr-only">Students in Grade 5B. Column headers sort the table.</caption>
+            <thead className="border-b border-line bg-paper">
+              <tr className="text-left">
+                <SortHeader k="name">Student</SortHeader>
+                <th scope="col" className="label px-3 py-2.5 font-medium">Level</th>
+                <SortHeader k="grade">Grade</SortHeader>
+                <SortHeader k="attendance">Attendance</SortHeader>
+                <SortHeader k="mood">Check-in</SortHeader>
+                <th scope="col" className="label px-3 py-2.5 font-medium">Trend</th>
+                <th scope="col" className="px-5 py-2.5 text-right"><span className="sr-only">Notes</span></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {filtered.map((s) => {
+                const flagged = getAttentionReasons(s).length > 0;
+                return (
+                  <tr key={s.id} className="transition-colors hover:bg-paper">
+                    <td className="py-3 pl-5 pr-3">
+                      <span className="flex items-center gap-2">
+                        {flagged && <span className="h-1.5 w-1.5 rounded-full bg-critical" aria-hidden="true" />}
+                        <span className={cx('font-medium text-ink', !flagged && 'pl-3.5')}>{s.name}</span>
+                        {flagged && <span className="sr-only">(needs attention)</span>}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-ink-700">{s.level}</td>
+                    <td className="px-3 py-3"><GradeCell grade={s.grade} /></td>
+                    <td className={cx('num px-3 py-3', s.attendance !== undefined && s.attendance < ATTENTION_RULES.attendanceBelow ? 'text-critical' : 'text-ink-700')}>
+                      {s.attendance !== undefined ? `${s.attendance}%` : <span className="text-ink-500">No record</span>}
+                    </td>
+                    <td className="num px-3 py-3 text-ink-700">{s.mood}/10</td>
+                    <td className="px-3 py-3"><TrendCell trend={s.trend} /></td>
+                    <td className="py-3 pl-3 pr-5 text-right">
+                      <button type="button" onClick={() => openNotes(s.id)} className="rounded-sm text-[13px] font-medium text-ember-700 hover:text-ember-800 hover:underline">
+                        {s.notes.length ? `${s.notes.length} note${s.notes.length > 1 ? 's' : ''}` : 'Add note'}
+                        <span className="sr-only"> for {s.name}</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-      <TigoChat />
+        {/* Stacked rows on small screens */}
+        <ul className="divide-y divide-line md:hidden">
+          {filtered.map((s) => (
+            <li key={s.id} className="px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium text-ink">{s.name}</p>
+                  <p className="text-[13px] text-ink-500">Level {s.level}</p>
+                </div>
+                <TrendCell trend={s.trend} />
+              </div>
+              <dl className="mt-3 grid grid-cols-3 gap-2 text-[13px]">
+                <div><dt className="label">Grade</dt><dd className={cx('num mt-0.5 font-medium', scoreTone(s.grade) === 'critical' ? 'text-critical' : 'text-ink')}>{s.grade}%</dd></div>
+                <div><dt className="label">Attend.</dt><dd className="num mt-0.5 text-ink">{s.attendance !== undefined ? `${s.attendance}%` : 'No record'}</dd></div>
+                <div><dt className="label">Check-in</dt><dd className="num mt-0.5 text-ink">{s.mood}/10</dd></div>
+              </dl>
+              <button type="button" onClick={() => openNotes(s.id)} className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-ember-700">
+                {s.notes.length ? `${s.notes.length} note${s.notes.length > 1 ? 's' : ''}` : 'Add note'}
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        {filtered.length === 0 && (
+          <div className="px-5 py-10 text-center">
+            <p className="text-sm text-ink-700">No students match those filters.</p>
+            <button type="button" className="link mt-1 text-sm" onClick={() => { setSearch(''); setLevelFilter('all'); }}>
+              Clear filters
+            </button>
+          </div>
+        )}
+      </Panel>
+
+      <Dialog open={Boolean(active)} onClose={() => setActiveStudent(null)} title={active ? `Notes on ${active.name}` : ''} description="Private to you. Students and families cannot see these.">
+        {active && (
+          <div className="space-y-5 p-5">
+            <form onSubmit={addNote} className="space-y-2">
+              <label htmlFor="note-draft" className="block text-[13px] font-medium text-ink-700">New note</label>
+              <textarea
+                id="note-draft"
+                data-autofocus
+                rows={3}
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote(e);
+                }}
+                placeholder="One observation, and what you will do next"
+                className={cx(controlStyles, 'resize-none py-2')}
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-ink-500">Ctrl + Enter to save</p>
+                <Button type="submit" size="sm" disabled={!noteDraft.trim()}>Save note</Button>
+              </div>
+            </form>
+            <div>
+              <p className="label mb-2">History</p>
+              {active.notes.length === 0 ? (
+                <p className="text-sm text-ink-500">No notes yet.</p>
+              ) : (
+                <ol className="divide-y divide-line border-y border-line">
+                  {active.notes.map((n, i) => (
+                    <li key={i} className="flex gap-4 py-2.5 text-sm">
+                      <span className="num w-11 shrink-0 text-[13px] text-ink-500">{n.at}</span>
+                      <span className="text-ink-800">{n.text}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 }

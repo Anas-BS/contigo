@@ -2,6 +2,7 @@
 import type {
   Student,
   Activity,
+  UpcomingItem,
   ChartDataPoint,
   Seat,
   PlatformStats,
@@ -10,19 +11,34 @@ import type {
 } from '@/lib/types';
 
 export const MOCK_STUDENTS: Student[] = [
-  { id: '1', name: 'Sara Ahmed', email: 'sara@example.com', role: 'student', grade: 82, mood: 8, trend: 'up', level: 'B2' },
-  { id: '2', name: 'Omar Hassan', email: 'omar@example.com', role: 'student', grade: 75, mood: 7, trend: 'stable', level: 'B1' },
-  { id: '3', name: 'Lena Khalil', email: 'lena@example.com', role: 'student', grade: 68, mood: 6, trend: 'down', level: 'B1' },
-  { id: '4', name: 'Ali Nasser', email: 'ali@example.com', role: 'student', grade: 91, mood: 9, trend: 'up', level: 'C1' },
-  { id: '5', name: 'Fatima Zahra', email: 'fatima@example.com', role: 'student', grade: 55, mood: 5, trend: 'down', level: 'A2' },
-  { id: '6', name: 'Hassan Malik', email: 'hassan@example.com', role: 'student', grade: 77, mood: 8, trend: 'up', level: 'B2' },
+  { id: '1', name: 'Sara Ahmed', email: 'sara@example.com', role: 'student', grade: 82, mood: 8, trend: 'up', level: 'B2', attendance: 96 },
+  { id: '2', name: 'Omar Hassan', email: 'omar@example.com', role: 'student', grade: 75, mood: 7, trend: 'stable', level: 'B1', attendance: 92 },
+  { id: '3', name: 'Lena Khalil', email: 'lena@example.com', role: 'student', grade: 68, mood: 6, trend: 'down', level: 'B1', attendance: 88 },
+  { id: '4', name: 'Ali Nasser', email: 'ali@example.com', role: 'student', grade: 91, mood: 9, trend: 'up', level: 'C1', attendance: 98 },
+  { id: '5', name: 'Fatima Zahra', email: 'fatima@example.com', role: 'student', grade: 55, mood: 5, trend: 'down', level: 'A2', attendance: 79 },
+  { id: '6', name: 'Hassan Malik', email: 'hassan@example.com', role: 'student', grade: 77, mood: 8, trend: 'up', level: 'B2', attendance: 94 },
 ];
 
 export const MOCK_ACTIVITIES: Activity[] = [
-  { id: 1, title: 'Completed Speaking Practice', time: '2 hours ago', icon: '🎤' },
-  { id: 2, title: 'Improved Listening Score', time: '5 hours ago', icon: '👂' },
-  { id: 3, title: 'Vocabulary Quiz: 92%', time: 'Yesterday', icon: '📚' },
-  { id: 4, title: 'Attended Live Class', time: '2 days ago', icon: '👥' },
+  { id: 1, title: 'Completed speaking practice, unit 6', time: '2 hours ago', kind: 'practice' },
+  { id: 2, title: 'Listening check scored 85%', time: '5 hours ago', kind: 'assessment' },
+  { id: 3, title: 'Vocabulary quiz scored 92%', time: 'Yesterday', kind: 'assessment' },
+  { id: 4, title: 'Attended Tuesday class', time: '2 days ago', kind: 'class' },
+];
+
+export const MOCK_UPCOMING: UpcomingItem[] = [
+  { id: 'u1', title: 'Speaking circle', when: 'Thu, 10:15', kind: 'class', detail: 'Describe a place you know well. Two minutes each.' },
+  { id: 'u2', title: 'Vocabulary quiz, unit 7', when: 'Fri, 09:00', kind: 'assessment', detail: '20 items. Workplace and travel vocabulary.' },
+  { id: 'u3', title: 'Opinion essay, first draft', when: 'Mon, 23:59', kind: 'deadline', detail: '250 words. Your teacher will comment on structure.' },
+];
+
+/** Whole-school attendance by weekday, current term. */
+export const MOCK_ATTENDANCE_BY_DAY: { day: string; rate: number }[] = [
+  { day: 'Mon', rate: 94 },
+  { day: 'Tue', rate: 95 },
+  { day: 'Wed', rate: 93 },
+  { day: 'Thu', rate: 92 },
+  { day: 'Fri', rate: 86 },
 ];
 
 export const MOCK_MOOD_DATA: ChartDataPoint[] = [

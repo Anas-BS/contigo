@@ -2,9 +2,9 @@
 import type { HeatmapKpi } from '@/lib/types';
 
 export const ROLES = [
-  { id: 'student', label: 'Student', emoji: '🎓', path: '/student/dashboard' },
-  { id: 'teacher', label: 'Teacher', emoji: '🧑‍🏫', path: '/teacher/dashboard' },
-  { id: 'admin', label: 'Admin', emoji: '🏛️', path: '/admin/dashboard' },
+  { id: 'student', label: 'Student', description: 'Your progress and goals', path: '/student/dashboard' },
+  { id: 'teacher', label: 'Teacher', description: 'Your classes and students', path: '/teacher/dashboard' },
+  { id: 'admin', label: 'School leader', description: 'Whole-school overview', path: '/admin/dashboard' },
 ] as const;
 
 export const COLORS = {
@@ -55,6 +55,4 @@ export const APP_CONFIG = {
   name: 'Contigo',
   tagline: 'With you, every step.',
   description: 'Contigo is a Holistic English Language Teaching (ELT) Student Performance Intelligence Platform.',
-  brandEmoji: '🌟',
-  tigoEmoji: '🤖',
 } as const;

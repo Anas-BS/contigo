@@ -1,37 +1,40 @@
 // Utility functions for Contigo platform
 import { GRADE_THRESHOLDS, INVERSE_HEATMAP_KPIS } from '@/lib/constants';
-import type { HeatmapKpi, Seat, ClassroomSeat } from '@/lib/types';
+import type { HeatmapKpi, Seat, ClassroomSeat, Student } from '@/lib/types';
 
 /**
  * Get color class based on score
  */
 export function getScoreColorClass(score: number): string {
-  if (score >= GRADE_THRESHOLDS.high) return 'text-green-600';
-  if (score >= GRADE_THRESHOLDS.medium) return 'text-amber-600';
-  return 'text-red-500';
+  if (score >= GRADE_THRESHOLDS.high) return 'text-positive';
+  if (score >= GRADE_THRESHOLDS.medium) return 'text-caution';
+  return 'text-critical';
+}
+
+export type ScoreTone = 'positive' | 'caution' | 'critical';
+
+/** Semantic tone for a 0 to 100 score, using the shared grade thresholds. */
+export function scoreTone(score: number): ScoreTone {
+  if (score >= GRADE_THRESHOLDS.high) return 'positive';
+  if (score >= GRADE_THRESHOLDS.medium) return 'caution';
+  return 'critical';
 }
 
 /**
  * Get background color class based on score for heatmap
  */
 export function getScoreBgColorClass(score: number): string {
-  if (score >= GRADE_THRESHOLDS.high) return 'bg-green-400 text-white';
-  if (score >= GRADE_THRESHOLDS.medium) return 'bg-yellow-400 text-white';
-  if (score >= GRADE_THRESHOLDS.low) return 'bg-orange-400 text-white';
-  return 'bg-red-500 text-white';
+  return seatScoreClass(score);
 }
 
 /**
- * Heatmap seat color (gradient flavour) based on raw score.
+ * Heatmap seat tone based on raw score. Tints stay light so ink text keeps AA contrast.
  */
 export function seatScoreClass(score: number): string {
-  if (score >= GRADE_THRESHOLDS.high)
-    return 'bg-gradient-to-br from-green-400 to-green-600 text-white';
-  if (score >= GRADE_THRESHOLDS.medium)
-    return 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white';
-  if (score >= GRADE_THRESHOLDS.low)
-    return 'bg-gradient-to-br from-orange-400 to-orange-600 text-white';
-  return 'bg-gradient-to-br from-red-500 to-red-700 text-white';
+  if (score >= GRADE_THRESHOLDS.high) return 'bg-heat-green text-ink';
+  if (score >= GRADE_THRESHOLDS.medium) return 'bg-heat-amber text-ink';
+  if (score >= GRADE_THRESHOLDS.low) return 'bg-heat-orange text-ink';
+  return 'bg-heat-red text-ink';
 }
 
 /**
@@ -91,11 +94,11 @@ export function getTrendEmoji(trend: 'up' | 'down' | 'stable'): string {
 export function getTrendColorClass(trend: 'up' | 'down' | 'stable'): string {
   switch (trend) {
     case 'up':
-      return 'text-green-500';
+      return 'text-positive';
     case 'down':
-      return 'text-red-500';
+      return 'text-critical';
     default:
-      return 'text-gray-400';
+      return 'text-ink-500';
   }
 }
 
@@ -118,4 +121,44 @@ export function getInitials(name: string): string {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+}
+
+/** Human label for a trend direction. */
+export function getTrendLabel(trend: 'up' | 'down' | 'stable'): string {
+  if (trend === 'up') return 'Rising';
+  if (trend === 'down') return 'Falling';
+  return 'Steady';
+}
+
+export const ATTENTION_RULES = {
+  attendanceBelow: 85,
+  moodAtOrBelow: 5,
+} as const;
+
+/**
+ * Concrete reasons a student may need a teacher's attention.
+ * An empty array means nothing currently stands out.
+ */
+export function getAttentionReasons(
+  student: Pick<Student, 'grade' | 'mood' | 'trend' | 'attendance'>
+): string[] {
+  const reasons: string[] = [];
+  if (student.grade < GRADE_THRESHOLDS.atRisk) reasons.push(`Grade ${student.grade}%, below ${GRADE_THRESHOLDS.atRisk}%`);
+  if (student.attendance !== undefined && student.attendance < ATTENTION_RULES.attendanceBelow)
+    reasons.push(`Attendance ${student.attendance}%`);
+  if (student.mood <= ATTENTION_RULES.moodAtOrBelow) reasons.push(`Check-in ${student.mood}/10`);
+  if (student.trend === 'down') reasons.push('Grade falling');
+  return reasons;
+}
+
+/** Round to a fixed number of decimals and return a number. */
+export function round(value: number, decimals = 0): number {
+  const f = 10 ** decimals;
+  return Math.round(value * f) / f;
+}
+
+/** Arithmetic mean; 0 for an empty list. */
+export function mean(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((a, b) => a + b, 0) / values.length;
 }
